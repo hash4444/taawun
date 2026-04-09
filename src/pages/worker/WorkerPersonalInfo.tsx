@@ -22,11 +22,11 @@ export default function WorkerPersonalInfo() {
     },
     {
       label: isRTL ? 'تاريخ الميلاد' : 'Date of Birth',
-      value: workerData?.dob || '1995-06-15',
+      value: (workerData as any)?.dob || '1995-06-15',
     },
     {
       label: isRTL ? 'المدينة' : 'City',
-      value: workerData?.city || (isRTL ? 'الرياض' : 'Riyadh'),
+      value: (workerData as any)?.city || (isRTL ? 'الرياض' : 'Riyadh'),
     },
     {
       label: isRTL ? 'المنطقة' : 'Area',

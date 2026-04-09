@@ -85,7 +85,7 @@ export default function BusinessProfile() {
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-foreground">
-                {businessData?.trade_name || businessData?.legal_name || (isRTL ? 'منشأتك' : 'Your Business')}
+                {(businessData as any)?.trade_name || (businessData as any)?.legal_name || (isRTL ? 'منشأتك' : 'Your Business')}
               </h2>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
               <StatusBadge 

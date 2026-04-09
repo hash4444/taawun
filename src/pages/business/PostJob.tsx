@@ -154,7 +154,7 @@ export default function PostJob() {
         salary_max: formData.salaryMax ? parseFloat(formData.salaryMax) : null,
         slots_total: parseInt(formData.workersNeeded),
         description: formData.requirements.trim() || null,
-        sector: businessData?.sector || null,
+        sector: ((businessData as any)?.sector as string) || null,
         status: 'open',
         currency: 'SAR',
         remote_allowed: formData.remoteAllowed,
