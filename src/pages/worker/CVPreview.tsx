@@ -47,11 +47,42 @@ export default function CVPreview() {
     }
   };
 
+  // If CV has an uploaded file, show the file directly
   if (!cv) {
     return (
       <MobileLayout header={<PageHeader title="CV" showBack />}>
         <div className="text-center py-16">
           <p className="text-muted-foreground">{isRTL ? 'السيرة غير موجودة' : 'CV not found'}</p>
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  if (cv.file_url) {
+    return (
+      <MobileLayout
+        header={
+          <PageHeader
+            title={isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
+            showBack
+            action={
+              <Button size="sm" asChild>
+                <a href={cv.file_url} target="_blank" rel="noopener noreferrer" download>
+                  <Download size={14} className="me-1" />
+                  {isRTL ? 'تحميل' : 'Download'}
+                </a>
+              </Button>
+            }
+          />
+        }
+        noPadding
+      >
+        <div className="flex-1 w-full h-full">
+          <iframe
+            src={cv.file_url}
+            className="w-full h-[calc(100vh-120px)] border-0"
+            title={cv.title}
+          />
         </div>
       </MobileLayout>
     );

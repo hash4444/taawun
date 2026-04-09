@@ -245,6 +245,7 @@ export type Database = {
           created_at: string
           education: Json | null
           experience: Json | null
+          file_url: string | null
           id: string
           is_ai_generated: boolean | null
           languages: Json | null
@@ -259,6 +260,7 @@ export type Database = {
           created_at?: string
           education?: Json | null
           experience?: Json | null
+          file_url?: string | null
           id?: string
           is_ai_generated?: boolean | null
           languages?: Json | null
@@ -273,6 +275,7 @@ export type Database = {
           created_at?: string
           education?: Json | null
           experience?: Json | null
+          file_url?: string | null
           id?: string
           is_ai_generated?: boolean | null
           languages?: Json | null

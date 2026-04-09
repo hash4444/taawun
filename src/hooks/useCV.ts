@@ -44,6 +44,7 @@ export interface CVRecord {
   languages: CVLanguage[];
   summary: string | null;
   is_ai_generated: boolean;
+  file_url: string | null;
   created_at: string;
   updated_at: string;
 }
