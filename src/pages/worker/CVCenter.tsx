@@ -16,6 +16,9 @@ export default function CVCenter() {
   const navigate = useNavigate();
   const { data: cvs, isLoading } = useCVRecords();
   const deleteCV = useDeleteCV();
+  const saveCV = useSaveCV();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleDelete = (id: string) => {
     deleteCV.mutate(id, {
