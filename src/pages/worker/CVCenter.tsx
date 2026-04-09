@@ -1,12 +1,13 @@
+import { useRef, useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
-import { useCVRecords, useDeleteCV, CVRecord } from '@/hooks/useCV';
+import { useCVRecords, useDeleteCV, useSaveCV, CVRecord } from '@/hooks/useCV';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Sparkles, Plus, Trash2, Download, Eye } from 'lucide-react';
+import { FileText, Sparkles, Plus, Trash2, Download, Eye, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 
