@@ -123,7 +123,7 @@ export function useCreateJob() {
       const insertData: JobInsert = {
         ...job,
         poster_id: user.id,
-        poster_role: profile.role,
+        poster_role: (profile.role || 'worker') as 'admin' | 'business' | 'worker',
         business_id: profile.role === 'business' ? user.id : null,
       };
 
@@ -154,7 +154,7 @@ export function useCreateJobs() {
       const insertData: JobInsert[] = jobs.map(job => ({
         ...job,
         poster_id: user.id,
-        poster_role: profile.role,
+        poster_role: (profile.role || 'worker') as 'admin' | 'business' | 'worker',
         business_id: profile.role === 'business' ? user.id : null,
       }));
 

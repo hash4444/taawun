@@ -63,7 +63,7 @@ export function useCreateDispute() {
         .insert({
           job_id: jobId,
           opened_by: user.id,
-          opened_by_role: profile.role,
+          opened_by_role: (profile.role || 'worker') as 'admin' | 'business' | 'worker',
           reason,
           status: 'open',
         })

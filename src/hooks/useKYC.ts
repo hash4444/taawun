@@ -157,7 +157,7 @@ export function useUploadKYCDocument() {
         .from('kyc_documents')
         .insert({
           owner_id: user.id,
-          owner_role: profile.role,
+          owner_role: (profile.role || 'worker') as 'admin' | 'business' | 'worker',
           doc_type: docType,
           storage_path: `${bucket}/${filePath}`,
           status: 'submitted',
