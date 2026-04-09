@@ -30,7 +30,7 @@ export default function WorkerPersonalInfo() {
     },
     {
       label: isRTL ? 'المنطقة' : 'Area',
-      value: workerData?.area || (isRTL ? 'العليا' : 'Al Olaya'),
+      value: (workerData as any)?.area || (isRTL ? 'العليا' : 'Al Olaya'),
     },
   ];
 
