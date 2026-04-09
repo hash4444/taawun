@@ -104,7 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async (_role?: string) => {
     const { lovable } = await import('@/integrations/lovable');
-    await lovable.auth.signInWithOAuth('google');
+    await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+    });
   };
 
   const signOut = async () => {
