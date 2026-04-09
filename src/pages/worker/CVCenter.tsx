@@ -42,6 +42,22 @@ export default function CVCenter() {
 
     setUploading(true);
     try {
+      const { useAuth } = await import('@/contexts/AuthContext');
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) throw new Error('Not authenticated');
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('cv_files')
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('cv_files')
+        .getPublicUrl(filePath);
+
       const fileName = file.name.replace(/\.[^/.]+$/, '');
       await saveCV.mutateAsync({
         title: fileName,
@@ -50,8 +66,9 @@ export default function CVCenter() {
         experience: [],
         skills: [],
         languages: [],
-        summary: `Uploaded file: ${file.name}`,
+        summary: null,
         is_ai_generated: false,
+        file_url: urlData.publicUrl,
       });
       toast({ title: isRTL ? 'تم رفع السيرة الذاتية' : 'CV uploaded successfully' });
     } catch {
