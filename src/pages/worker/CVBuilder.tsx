@@ -97,6 +97,7 @@ export default function CVBuilder() {
         languages,
         summary,
         is_ai_generated: true,
+        file_url: null,
       },
       {
         onSuccess: (data) => {

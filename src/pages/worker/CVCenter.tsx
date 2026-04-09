@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -42,7 +43,6 @@ export default function CVCenter() {
 
     setUploading(true);
     try {
-      const { useAuth } = await import('@/contexts/AuthContext');
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (!userId) throw new Error('Not authenticated');
 
