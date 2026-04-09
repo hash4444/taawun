@@ -124,8 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const profile = user?.profile;
-  const verificationStatus = 'not_started' as const;
+  const verificationStatus: AuthContextType['verificationStatus'] = 'not_started';
   const isAdmin = user?.role === 'ADMIN';
+  const isVerified = false;
   const isVerified = verificationStatus === 'verified';
 
   return (
