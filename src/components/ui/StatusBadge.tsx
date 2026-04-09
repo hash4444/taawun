@@ -17,6 +17,11 @@ const statusConfig = {
     icon: AlertCircle,
     className: 'bg-muted text-muted-foreground',
   },
+  pending: {
+    labelKey: 'pending' as const,
+    icon: Clock,
+    className: 'bg-warning-light text-warning',
+  },
   pending_review: {
     labelKey: 'pending' as const,
     icon: Clock,
