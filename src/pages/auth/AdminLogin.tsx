@@ -28,11 +28,11 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await signIn(email, password);
-
-    if (error) {
+    try {
+      await signIn(email, password);
+    } catch (err: any) {
       toast.error(isRTL ? 'فشل تسجيل الدخول' : 'Login failed', {
-        description: error.message,
+        description: err?.message || 'Unknown error',
       });
       setLoading(false);
       return;

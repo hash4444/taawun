@@ -47,7 +47,7 @@ export default function BusinessDashboard() {
               {t('dashboard')}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {businessData?.trade_name || businessData?.legal_name || profile?.email}
+              {(businessData as any)?.trade_name || (businessData as any)?.legal_name || profile?.email}
             </p>
           </div>
           
