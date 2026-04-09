@@ -68,15 +68,22 @@ export default function CVCenter() {
       footer={<BottomNav />}
     >
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+      <div className="grid grid-cols-3 gap-3 mb-6">
         <Button
           onClick={() => navigate('/worker/cv/builder')}
           className="h-auto py-5 flex-col gap-2"
           variant="default"
         >
           <Sparkles size={24} />
-          <span className="text-sm font-medium">
-            {isRTL ? 'إنشاء بالذكاء الاصطناعي' : 'AI Generate'}
+          <span className="text-xs font-medium">
+            {isRTL ? 'ذكاء اصطناعي' : 'AI Generate'}
           </span>
         </Button>
 
@@ -86,8 +93,20 @@ export default function CVCenter() {
           variant="outline"
         >
           <Plus size={24} />
-          <span className="text-sm font-medium">
-            {isRTL ? 'إنشاء يدوي' : 'Create Manually'}
+          <span className="text-xs font-medium">
+            {isRTL ? 'إنشاء يدوي' : 'Create Manual'}
+          </span>
+        </Button>
+
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          className="h-auto py-5 flex-col gap-2"
+          variant="outline"
+          disabled={uploading}
+        >
+          <Upload size={24} />
+          <span className="text-xs font-medium">
+            {uploading ? (isRTL ? 'جاري الرفع...' : 'Uploading...') : (isRTL ? 'رفع ملف' : 'Upload File')}
           </span>
         </Button>
       </div>
