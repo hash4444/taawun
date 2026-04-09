@@ -88,12 +88,6 @@ export function useOpenDisputes() {
         .from('disputes')
         .select(`
           *,
-          profiles:opened_by (
-            id,
-            email,
-            full_name,
-            role
-          ),
           jobs (
             id,
             title,
@@ -105,7 +99,7 @@ export function useOpenDisputes() {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data as DisputeWithDetails[];
+      return (data as unknown) as DisputeWithDetails[];
     },
   });
 }

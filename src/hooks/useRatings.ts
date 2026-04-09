@@ -137,7 +137,7 @@ export function useSubmitRating() {
           to_user_id: toUserId,
           rating,
           comment: comment || null,
-          from_role: profile.role,
+          from_role: (profile.role || 'worker') as 'admin' | 'business' | 'worker',
         })
         .select()
         .single();

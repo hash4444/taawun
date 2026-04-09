@@ -63,20 +63,15 @@ export function useJobApplications(jobId: string) {
         .from('applications')
         .select(`
           *,
-          workers (
-            *,
-            profiles:id (
-              full_name,
-              avatar_url,
-              phone
-            )
+          workers:worker_id (
+            *
           )
         `)
         .eq('job_id', jobId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as ApplicationWithWorker[];
+      return (data as unknown) as ApplicationWithWorker[];
     },
     enabled: !!jobId,
   });

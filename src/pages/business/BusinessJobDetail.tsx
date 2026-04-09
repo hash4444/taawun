@@ -84,7 +84,7 @@ export default function BusinessJobDetail() {
 
   const acceptedApplications = applications?.filter(a => a.status === 'accepted' || a.status === 'completed') || [];
   const pendingApplications = applications?.filter(a => a.status === 'applied') || [];
-  const isJobActive = job.status === 'open' || job.status === 'filled' || job.status === 'in_progress';
+  const isJobActive = job.status === 'open' || job.status === 'in_progress';
   const isJobCompleted = job.status === 'completed';
   const isShiftType = job.job_type === 'shift';
 
