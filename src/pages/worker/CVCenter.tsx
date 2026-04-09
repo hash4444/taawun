@@ -1,12 +1,13 @@
+import { useRef, useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
-import { useCVRecords, useDeleteCV, CVRecord } from '@/hooks/useCV';
+import { useCVRecords, useDeleteCV, useSaveCV, CVRecord } from '@/hooks/useCV';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Sparkles, Plus, Trash2, Download, Eye } from 'lucide-react';
+import { FileText, Sparkles, Plus, Trash2, Download, Eye, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 
@@ -15,11 +16,50 @@ export default function CVCenter() {
   const navigate = useNavigate();
   const { data: cvs, isLoading } = useCVRecords();
   const deleteCV = useDeleteCV();
+  const saveCV = useSaveCV();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleDelete = (id: string) => {
     deleteCV.mutate(id, {
       onSuccess: () => toast({ title: isRTL ? 'تم الحذف' : 'CV deleted' }),
     });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(file.type)) {
+      toast({ title: isRTL ? 'نوع ملف غير مدعوم' : 'Unsupported file type', description: isRTL ? 'يرجى رفع ملف PDF أو Word' : 'Please upload a PDF or Word file', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: isRTL ? 'الملف كبير جداً' : 'File too large', description: isRTL ? 'الحد الأقصى 10 ميجابايت' : 'Maximum 10MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileName = file.name.replace(/\.[^/.]+$/, '');
+      await saveCV.mutateAsync({
+        title: fileName,
+        personal_info: {},
+        education: [],
+        experience: [],
+        skills: [],
+        languages: [],
+        summary: `Uploaded file: ${file.name}`,
+        is_ai_generated: false,
+      });
+      toast({ title: isRTL ? 'تم رفع السيرة الذاتية' : 'CV uploaded successfully' });
+    } catch {
+      toast({ title: isRTL ? 'فشل الرفع' : 'Upload failed', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -28,15 +68,22 @@ export default function CVCenter() {
       footer={<BottomNav />}
     >
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+      <div className="grid grid-cols-3 gap-3 mb-6">
         <Button
           onClick={() => navigate('/worker/cv/builder')}
           className="h-auto py-5 flex-col gap-2"
           variant="default"
         >
           <Sparkles size={24} />
-          <span className="text-sm font-medium">
-            {isRTL ? 'إنشاء بالذكاء الاصطناعي' : 'AI Generate'}
+          <span className="text-xs font-medium">
+            {isRTL ? 'ذكاء اصطناعي' : 'AI Generate'}
           </span>
         </Button>
 
@@ -46,8 +93,20 @@ export default function CVCenter() {
           variant="outline"
         >
           <Plus size={24} />
-          <span className="text-sm font-medium">
-            {isRTL ? 'إنشاء يدوي' : 'Create Manually'}
+          <span className="text-xs font-medium">
+            {isRTL ? 'إنشاء يدوي' : 'Create Manual'}
+          </span>
+        </Button>
+
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          className="h-auto py-5 flex-col gap-2"
+          variant="outline"
+          disabled={uploading}
+        >
+          <Upload size={24} />
+          <span className="text-xs font-medium">
+            {uploading ? (isRTL ? 'جاري الرفع...' : 'Uploading...') : (isRTL ? 'رفع ملف' : 'Upload File')}
           </span>
         </Button>
       </div>
