@@ -127,7 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verificationStatus: AuthContextType['verificationStatus'] = 'not_started';
   const isAdmin = user?.role === 'ADMIN';
   const isVerified = false;
-  const isVerified = verificationStatus === 'verified';
 
   return (
     <AuthContext.Provider value={{
