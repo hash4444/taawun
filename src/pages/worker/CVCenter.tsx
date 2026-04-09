@@ -26,6 +26,42 @@ export default function CVCenter() {
     });
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(file.type)) {
+      toast({ title: isRTL ? 'نوع ملف غير مدعوم' : 'Unsupported file type', description: isRTL ? 'يرجى رفع ملف PDF أو Word' : 'Please upload a PDF or Word file', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: isRTL ? 'الملف كبير جداً' : 'File too large', description: isRTL ? 'الحد الأقصى 10 ميجابايت' : 'Maximum 10MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileName = file.name.replace(/\.[^/.]+$/, '');
+      await saveCV.mutateAsync({
+        title: fileName,
+        personal_info: {},
+        education: [],
+        experience: [],
+        skills: [],
+        languages: [],
+        summary: `Uploaded file: ${file.name}`,
+        is_ai_generated: false,
+      });
+      toast({ title: isRTL ? 'تم رفع السيرة الذاتية' : 'CV uploaded successfully' });
+    } catch {
+      toast({ title: isRTL ? 'فشل الرفع' : 'Upload failed', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <MobileLayout
       header={<PageHeader title={isRTL ? 'مركز السيرة الذاتية' : 'CV Center'} showBack />}
