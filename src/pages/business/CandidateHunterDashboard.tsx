@@ -126,11 +126,11 @@ export default function CandidateHunterDashboard() {
                     <p className="text-sm text-muted-foreground">Role: {act.role} • Match: {act.score}%</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className={\`px-2 py-1 text-xs font-semibold rounded-full 
-                      \${act.type === 'SUGGESTED' ? 'bg-blue-100 text-blue-800' : ''}
-                      \${act.type === 'QUEUED' ? 'bg-yellow-100 text-yellow-800' : ''}
-                      \${act.type === 'OUTREACHED' ? 'bg-green-100 text-green-800' : ''}
-                    \`}>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full 
+                      ${act.type === 'SUGGESTED' ? 'bg-blue-100 text-blue-800' : ''}
+                      ${act.type === 'QUEUED' ? 'bg-yellow-100 text-yellow-800' : ''}
+                      ${act.type === 'OUTREACHED' ? 'bg-green-100 text-green-800' : ''}
+                    `}>
                       {act.type}
                     </span>
                     <span className="text-xs text-muted-foreground">{act.date}</span>
