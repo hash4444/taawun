@@ -1,16 +1,33 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import logo from '@/assets/logo.png';
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, isLoading, profile } = useAuth();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      navigate('/onboarding/welcome', { replace: true });
+    } else if (profile?.role === 'business') {
+      navigate('/business/dashboard', { replace: true });
+    } else {
+      navigate('/worker/home', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, profile, navigate]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <img 
+        src={logo} 
+        alt="Taawun Logo" 
+        className="w-20 h-20 rounded-2xl animate-pulse"
+      />
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
