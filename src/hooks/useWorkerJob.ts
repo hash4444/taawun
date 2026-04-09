@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface JobMatchAnalysis {
     score: number;
@@ -17,33 +16,45 @@ export function useWorkerJob(jobId: string) {
     return useQuery({
         queryKey: ['worker-job', jobId],
         queryFn: async () => {
-            const token = localStorage.getItem('access_token');
-            const res = await fetch(`${API_URL}/jobs/${jobId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (!res.ok) throw new Error('Job not found');
-            return res.json();
+            const { data, error } = await supabase
+                .from('jobs')
+                .select(`
+                    *,
+                    businesses (
+                        id,
+                        trade_name,
+                        legal_name,
+                        sector,
+                        rating_avg,
+                        rating_count
+                    )
+                `)
+                .eq('id', jobId)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
         },
         enabled: !!jobId,
     });
 }
 
-export function useJobMatch(jobId: string) {
+export function useJobMatch(_jobId: string) {
+    // Job matching will be implemented via an edge function later
     return useQuery({
-        queryKey: ['job-match', jobId],
-        queryFn: async () => {
-            const token = localStorage.getItem('access_token');
-            const res = await fetch(`${API_URL}/jobs/${jobId}/match`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (!res.ok) throw new Error('Could not fetch match data');
-            return res.json() as Promise<JobMatchAnalysis>;
+        queryKey: ['job-match', _jobId],
+        queryFn: async (): Promise<JobMatchAnalysis> => {
+            return {
+                score: 0,
+                label: 'Not available',
+                explanation: 'Job matching is being set up.',
+                strengths: [],
+                gaps: [],
+                improvements: [],
+                careerPath: '',
+                futureSkills: [],
+            };
         },
-        enabled: !!jobId && !!localStorage.getItem('access_token'),
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        enabled: false,
     });
 }
