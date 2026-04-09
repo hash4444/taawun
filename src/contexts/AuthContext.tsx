@@ -6,6 +6,10 @@ export interface Profile {
   id: string;
   firstName: string;
   lastName: string;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
   avatarUrl?: string;
 }
 
@@ -21,28 +25,40 @@ interface AuthContextType {
   profile: Profile | undefined;
   isAuthenticated: boolean;
   isLoading: boolean;
-  verificationStatus: 'verified' | 'pending' | 'rejected' | 'not_started';
+  isAdmin: boolean;
+  isVerified: boolean;
+  verificationStatus: 'verified' | 'pending' | 'pending_review' | 'rejected' | 'not_started';
+  businessData: Record<string, unknown> | null;
+  workerData: Record<string, unknown> | null;
   login: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: string) => Promise<void>;
   signInWithGoogle: (role?: string) => void;
   signOut: () => void;
   setSessionFromToken: (token: string) => void;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapSupabaseUser(su: SupabaseUser): User {
   const meta = su.user_metadata || {};
+  const firstName = meta.firstName || meta.full_name?.split(' ')[0] || '';
+  const lastName = meta.lastName || meta.full_name?.split(' ').slice(1).join(' ') || '';
   return {
     id: su.id,
     email: su.email || '',
     role: meta.role || 'WORKER',
-    profile: meta.firstName ? {
+    profile: {
       id: su.id,
-      firstName: meta.firstName || '',
-      lastName: meta.lastName || '',
+      firstName,
+      lastName,
+      full_name: meta.full_name || `${firstName} ${lastName}`.trim(),
+      email: su.email || '',
+      phone: meta.phone || su.phone || '',
+      role: meta.role || 'WORKER',
       avatarUrl: meta.avatar_url,
-    } : undefined,
+    },
   };
 }
 
@@ -100,8 +116,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Sessions managed automatically by Supabase
   };
 
+  const refreshProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      setUser(mapSupabaseUser(session.user));
+    }
+  };
+
   const profile = user?.profile;
   const verificationStatus = 'not_started' as const;
+  const isAdmin = user?.role === 'ADMIN';
+  const isVerified = verificationStatus === 'verified';
 
   return (
     <AuthContext.Provider value={{
@@ -109,12 +134,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       isAuthenticated: !!user,
       isLoading,
+      isAdmin,
+      isVerified,
       verificationStatus,
+      businessData: null,
+      workerData: null,
       login,
+      signIn: login,
       register,
       signInWithGoogle,
       signOut,
       setSessionFromToken,
+      refreshProfile,
     }}>
       {children}
     </AuthContext.Provider>
