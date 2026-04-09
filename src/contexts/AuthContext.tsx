@@ -1,14 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-// Use environment variable for API URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+import { supabase } from '@/integrations/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 export interface Profile {
   id: string;
   firstName: string;
   lastName: string;
-  avatarUrl?: string; // Add if schema has it, or derived
-  // Add other fields as needed
+  avatarUrl?: string;
 }
 
 interface User {
@@ -16,7 +14,6 @@ interface User {
   email: string;
   role: string;
   profile?: Profile;
-  // Add company if needed
 }
 
 interface AuthContextType {
@@ -24,7 +21,7 @@ interface AuthContextType {
   profile: Profile | undefined;
   isAuthenticated: boolean;
   isLoading: boolean;
-  verificationStatus: 'verified' | 'pending' | 'rejected' | 'not_started'; // Mock or real
+  verificationStatus: 'verified' | 'pending' | 'rejected' | 'not_started';
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: string) => Promise<void>;
   signInWithGoogle: (role?: string) => void;
@@ -34,88 +31,77 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function mapSupabaseUser(su: SupabaseUser): User {
+  const meta = su.user_metadata || {};
+  return {
+    id: su.id,
+    email: su.email || '',
+    role: meta.role || 'WORKER',
+    profile: meta.firstName ? {
+      id: su.id,
+      firstName: meta.firstName || '',
+      lastName: meta.lastName || '',
+      avatarUrl: meta.avatar_url,
+    } : undefined,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      // Decode token or fetch user profile
-      fetchUser(token);
-    } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          setUser(mapSupabaseUser(session.user));
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(mapSupabaseUser(session.user));
+      }
       setIsLoading(false);
-    }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUser = async (token: string) => {
-    try {
-      const res = await fetch(`${API_URL}/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const userData = await res.json();
-        setUser(userData);
-      } else {
-        localStorage.removeItem('access_token');
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user', error);
-      localStorage.removeItem('access_token');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const login = async (email: string, password: string) => {
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Login failed');
-    }
-    const data = await res.json();
-    localStorage.setItem('access_token', data.access_token);
-    await fetchUser(data.access_token);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
   };
 
   const register = async (email: string, password: string, role: string) => {
-    const res = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, role }),
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { role } },
     });
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Registration failed');
-    }
-    const data = await res.json();
-    localStorage.setItem('access_token', data.access_token);
-    await fetchUser(data.access_token);
+    if (error) throw new Error(error.message);
   };
 
-  const signInWithGoogle = (role?: string) => {
-    const intent = role ? `?intent=${role}` : '';
-    window.location.href = `${API_URL}/auth/google${intent}`;
+  const signInWithGoogle = async (_role?: string) => {
+    const { lovable } = await import('@/integrations/lovable');
+    await lovable.auth.signInWithOAuth('google');
   };
 
-  const signOut = () => {
-    localStorage.removeItem('access_token');
+  const signOut = async () => {
+    await supabase.auth.signOut();
     setUser(null);
   };
 
-  const setSessionFromToken = (token: string) => {
-    localStorage.setItem('access_token', token);
-    fetchUser(token);
-  }
+  const setSessionFromToken = (_token: string) => {
+    // Sessions managed automatically by Supabase
+  };
 
-  // Derived state
   const profile = user?.profile;
-  const verificationStatus = 'not_started'; // Placeholder until backend verification module is active
+  const verificationStatus = 'not_started' as const;
 
   return (
     <AuthContext.Provider value={{
@@ -128,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       signInWithGoogle,
       signOut,
-      setSessionFromToken
+      setSessionFromToken,
     }}>
       {children}
     </AuthContext.Provider>
