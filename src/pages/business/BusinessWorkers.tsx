@@ -74,7 +74,7 @@ export default function BusinessWorkers() {
           if (app.status === 'completed') {
             existing.jobsCompleted++;
           }
-          if (app.jobs?.status === 'in_progress' || app.jobs?.status === 'open' || app.jobs?.status === 'filled') {
+          if (app.jobs?.status === 'in_progress' || app.jobs?.status === 'open') {
             existing.isActive = true;
           }
         } else {
@@ -83,7 +83,7 @@ export default function BusinessWorkers() {
             name: profile?.full_name || (isRTL ? 'عامل' : 'Worker'),
             rating: workerInfo?.rating_avg || 0,
             jobsCompleted: app.status === 'completed' ? 1 : 0,
-            isActive: app.jobs?.status === 'in_progress' || app.jobs?.status === 'open' || app.jobs?.status === 'filled',
+            isActive: app.jobs?.status === 'in_progress' || app.jobs?.status === 'open',
           });
         }
       });

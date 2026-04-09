@@ -103,19 +103,19 @@ export default function JobDetails() {
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                             <div className="flex flex-wrap gap-2 mb-3">
-                                {renderBadge(job.type || 'Full-time', <Clock size={14} />)}
+                                {renderBadge(job.job_type || 'Full-time', <Clock size={14} />)}
                                 {job.location?.toLowerCase().includes('remote') && renderBadge('Remote', <MapPin size={14} />)}
                             </div>
                             <h1 className="text-2xl font-bold text-foreground leading-tight mb-2">{job.title}</h1>
                             <div className="flex items-center gap-2 text-muted-foreground font-medium">
                                 <Building2 size={18} className="text-primary" />
-                                <span>{job.company?.name}</span>
-                                {job.company?.isVerified && <CheckCircle2 size={14} className="text-blue-500" />}
+                                <span>{job.businesses?.trade_name || job.company_name}</span>
+                                {job.businesses?.verification_status === 'verified' && <CheckCircle2 size={14} className="text-blue-500" />}
                             </div>
                         </div>
-                        {job.company?.logoUrl && (
+                        {(job.businesses?.logo_url || job.company_logo) && (
                             <div className="w-16 h-16 rounded-2xl border bg-white p-2 flex items-center justify-center shadow-sm overflow-hidden">
-                                <img src={job.company.logoUrl} alt={job.company.name} className="max-w-full max-h-full object-contain" />
+                                <img src={job.businesses?.logo_url || job.company_logo || ''} alt={job.businesses?.trade_name || job.company_name || ''} className="max-w-full max-h-full object-contain" />
                             </div>
                         )}
                     </div>
@@ -128,13 +128,13 @@ export default function JobDetails() {
                         <div className="flex flex-col gap-1 p-3 rounded-2xl bg-secondary/30">
                             <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Salary</span>
                             <span className="text-sm font-semibold">
-                                {job.salaryMin ? `${job.salaryMin} - ${job.salaryMax} ${job.currency || 'USD'}` : 'Not disclosed'}
+                                {job.salary_min ? `${job.salary_min} - ${job.salary_max} ${job.currency || 'SAR'}` : 'Not disclosed'}
                             </span>
                         </div>
                     </div>
 
                     <div className="mt-4 text-xs text-muted-foreground flex items-center gap-4">
-                        <span>Posted {format(new Date(job.createdAt), 'MMM dd')}</span>
+                        <span>Posted {format(new Date(job.created_at), 'MMM dd')}</span>
                         {job.deadline && <span>Deadline: {format(new Date(job.deadline), 'MMM dd')}</span>}
                     </div>
                 </div>
@@ -235,10 +235,10 @@ export default function JobDetails() {
                         </p>
                     </Section>
 
-                    {job.responsibilities?.length > 0 && (
-                        <Section title="Responsibilities">
+                    {job.skills_required?.length > 0 && (
+                        <Section title="Requirements">
                             <ul className="space-y-3">
-                                {job.responsibilities.map((r: string, i: number) => (
+                                {job.skills_required.map((r: string, i: number) => (
                                     <li key={i} className="flex gap-3 text-muted-foreground leading-relaxed">
                                         <div className="mt-2.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                                         {r}
@@ -248,16 +248,11 @@ export default function JobDetails() {
                         </Section>
                     )}
 
-                    {job.requirements?.length > 0 && (
-                        <Section title="Requirements">
-                            <ul className="space-y-3">
-                                {job.requirements.map((r: string, i: number) => (
-                                    <li key={i} className="flex gap-3 text-muted-foreground leading-relaxed">
-                                        <div className="mt-2.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                                        {r}
-                                    </li>
-                                ))}
-                            </ul>
+                    {job.description && (
+                        <Section title="Details">
+                            <p className="text-muted-foreground leading-relaxed">
+                                {job.description}
+                            </p>
                         </Section>
                     )}
                 </div>
@@ -291,18 +286,18 @@ export default function JobDetails() {
                 <div className="p-6 rounded-3xl bg-secondary/10 border space-y-4">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center border p-2">
-                            {job.company?.logoUrl ? (
-                                <img src={job.company.logoUrl} alt={job.company.name} className="w-full h-full object-contain" />
+                            {job.businesses?.logo_url ? (
+                                <img src={job.businesses.logo_url} alt={job.businesses.trade_name || ''} className="w-full h-full object-contain" />
                             ) : (
                                 <Building2 className="text-muted-foreground" />
                             )}
                         </div>
                         <div>
-                            <h3 className="font-bold">{job.company?.name}</h3>
-                            <p className="text-xs text-muted-foreground">{job.company?.industry || 'Technology'} • {job.company?.size || '11-50'} employees</p>
+                            <h3 className="font-bold">{job.businesses?.trade_name || job.company_name}</h3>
+                            <p className="text-xs text-muted-foreground">{job.businesses?.sector || 'Technology'} • {job.businesses?.size || '11-50'} employees</p>
                         </div>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{job.company?.description || 'A leading innovator in the industry, focused on creating world-class solutions for global challenges.'}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{'A leading innovator in the industry.'}</p>
                     <Button variant="link" className="p-0 h-auto text-primary font-bold text-sm">
                         View Company Profile <ChevronRight size={16} />
                     </Button>

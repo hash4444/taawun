@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -42,57 +42,11 @@ export type Database = {
           target_id?: string
           target_type?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "admin_actions_admin_id_fkey"
-            columns: ["admin_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      admin_allowlist: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          email: string
-          id: string
-          is_active: boolean
-          role: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          email: string
-          id?: string
-          is_active?: boolean
-          role?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          email?: string
-          id?: string
-          is_active?: boolean
-          role?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_allowlist_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       applications: {
         Row: {
-          applied_at: string
+          cover_letter: string | null
           created_at: string
           id: string
           job_id: string
@@ -101,7 +55,7 @@ export type Database = {
           worker_id: string
         }
         Insert: {
-          applied_at?: string
+          cover_letter?: string | null
           created_at?: string
           id?: string
           job_id: string
@@ -110,7 +64,7 @@ export type Database = {
           worker_id: string
         }
         Update: {
-          applied_at?: string
+          cover_letter?: string | null
           created_at?: string
           id?: string
           job_id?: string
@@ -120,17 +74,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "applications_shift_id_fkey"
+            foreignKeyName: "applications_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "applications_worker_id_fkey"
-            columns: ["worker_id"]
-            isOneToOne: false
-            referencedRelation: "workers"
             referencedColumns: ["id"]
           },
         ]
@@ -174,24 +121,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "attendance_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_shift_id_fkey"
+            foreignKeyName: "attendance_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_worker_id_fkey"
-            columns: ["worker_id"]
-            isOneToOne: false
-            referencedRelation: "workers"
             referencedColumns: ["id"]
           },
         ]
@@ -203,7 +136,7 @@ export type Database = {
           created_at: string
           iban: string
           id: string
-          is_default: boolean
+          is_default: boolean | null
           updated_at: string
           user_id: string
         }
@@ -213,7 +146,7 @@ export type Database = {
           created_at?: string
           iban: string
           id?: string
-          is_default?: boolean
+          is_default?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -223,142 +156,85 @@ export type Database = {
           created_at?: string
           iban?: string
           id?: string
-          is_default?: boolean
+          is_default?: boolean | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "bank_accounts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      business_locations: {
-        Row: {
-          address: string
-          business_id: string
-          created_at: string
-          id: string
-          is_primary: boolean | null
-          lat: number | null
-          lng: number | null
-        }
-        Insert: {
-          address: string
-          business_id: string
-          created_at?: string
-          id?: string
-          is_primary?: boolean | null
-          lat?: number | null
-          lng?: number | null
-        }
-        Update: {
-          address?: string
-          business_id?: string
-          created_at?: string
-          id?: string
-          is_primary?: boolean | null
-          lat?: number | null
-          lng?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "business_locations_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       businesses: {
         Row: {
           created_at: string
           id: string
           legal_name: string | null
+          logo_url: string | null
           rating_avg: number | null
           rating_count: number | null
-          rep_name: string | null
-          rep_phone: string | null
-          rep_title: string | null
           sector: string | null
+          size: string | null
           trade_name: string | null
           updated_at: string
-          verification_status: Database["public"]["Enums"]["verification_status"]
+          verification_status: string
         }
         Insert: {
           created_at?: string
           id: string
           legal_name?: string | null
+          logo_url?: string | null
           rating_avg?: number | null
           rating_count?: number | null
-          rep_name?: string | null
-          rep_phone?: string | null
-          rep_title?: string | null
           sector?: string | null
+          size?: string | null
           trade_name?: string | null
           updated_at?: string
-          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verification_status?: string
         }
         Update: {
           created_at?: string
           id?: string
           legal_name?: string | null
+          logo_url?: string | null
           rating_avg?: number | null
           rating_count?: number | null
-          rep_name?: string | null
-          rep_phone?: string | null
-          rep_title?: string | null
           sector?: string | null
+          size?: string | null
           trade_name?: string | null
           updated_at?: string
-          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verification_status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "businesses_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       chat_sessions: {
         Row: {
           created_at: string
           id: string
-          is_archived: boolean
-          is_pinned: boolean
-          messages: Json
+          is_archived: boolean | null
+          is_pinned: boolean | null
+          messages: Json | null
           metadata: Json | null
-          title: string
+          title: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          is_archived?: boolean
-          is_pinned?: boolean
-          messages?: Json
+          is_archived?: boolean | null
+          is_pinned?: boolean | null
+          messages?: Json | null
           metadata?: Json | null
-          title?: string
+          title?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          is_archived?: boolean
-          is_pinned?: boolean
-          messages?: Json
+          is_archived?: boolean | null
+          is_pinned?: boolean | null
+          messages?: Json | null
           metadata?: Json | null
-          title?: string
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -445,14 +321,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "disputes_opened_by_fkey"
-            columns: ["opened_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "disputes_shift_id_fkey"
+            foreignKeyName: "disputes_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
@@ -464,6 +333,9 @@ export type Database = {
         Row: {
           address: string | null
           business_id: string | null
+          category: string | null
+          company_logo: string | null
+          company_name: string | null
           created_at: string
           currency: string | null
           deadline: string | null
@@ -473,11 +345,9 @@ export type Database = {
           experience_years: number | null
           id: string
           job_type: Database["public"]["Enums"]["job_type"]
-          lat: number | null
-          lng: number | null
-          milestones: Json | null
-          pay_amount: number
-          payment_model: Database["public"]["Enums"]["payment_model"]
+          location: string | null
+          pay_amount: number | null
+          payment_model: Database["public"]["Enums"]["payment_model"] | null
           poster_id: string
           poster_role: Database["public"]["Enums"]["app_role"]
           remote_allowed: boolean | null
@@ -489,15 +359,19 @@ export type Database = {
             | null
           skills_required: string[] | null
           slots_filled: number | null
-          slots_total: number
-          start_time: string
-          status: Database["public"]["Enums"]["shift_status"]
+          slots_total: number | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          subcategory: string | null
           title: string
           updated_at: string
         }
         Insert: {
           address?: string | null
           business_id?: string | null
+          category?: string | null
+          company_logo?: string | null
+          company_name?: string | null
           created_at?: string
           currency?: string | null
           deadline?: string | null
@@ -509,13 +383,11 @@ export type Database = {
           experience_years?: number | null
           id?: string
           job_type?: Database["public"]["Enums"]["job_type"]
-          lat?: number | null
-          lng?: number | null
-          milestones?: Json | null
-          pay_amount: number
-          payment_model?: Database["public"]["Enums"]["payment_model"]
+          location?: string | null
+          pay_amount?: number | null
+          payment_model?: Database["public"]["Enums"]["payment_model"] | null
           poster_id: string
-          poster_role: Database["public"]["Enums"]["app_role"]
+          poster_role?: Database["public"]["Enums"]["app_role"]
           remote_allowed?: boolean | null
           salary_max?: number | null
           salary_min?: number | null
@@ -525,15 +397,19 @@ export type Database = {
             | null
           skills_required?: string[] | null
           slots_filled?: number | null
-          slots_total?: number
-          start_time: string
-          status?: Database["public"]["Enums"]["shift_status"]
+          slots_total?: number | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          subcategory?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           address?: string | null
           business_id?: string | null
+          category?: string | null
+          company_logo?: string | null
+          company_name?: string | null
           created_at?: string
           currency?: string | null
           deadline?: string | null
@@ -545,11 +421,9 @@ export type Database = {
           experience_years?: number | null
           id?: string
           job_type?: Database["public"]["Enums"]["job_type"]
-          lat?: number | null
-          lng?: number | null
-          milestones?: Json | null
-          pay_amount?: number
-          payment_model?: Database["public"]["Enums"]["payment_model"]
+          location?: string | null
+          pay_amount?: number | null
+          payment_model?: Database["public"]["Enums"]["payment_model"] | null
           poster_id?: string
           poster_role?: Database["public"]["Enums"]["app_role"]
           remote_allowed?: boolean | null
@@ -561,15 +435,16 @@ export type Database = {
             | null
           skills_required?: string[] | null
           slots_filled?: number | null
-          slots_total?: number
-          start_time?: string
-          status?: Database["public"]["Enums"]["shift_status"]
+          slots_total?: number | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          subcategory?: string | null
           title?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "shifts_business_id_fkey"
+            foreignKeyName: "jobs_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -589,6 +464,7 @@ export type Database = {
           reviewed_by: string | null
           status: Database["public"]["Enums"]["doc_status"]
           storage_path: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
@@ -601,6 +477,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["doc_status"]
           storage_path: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
@@ -613,54 +490,49 @@ export type Database = {
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["doc_status"]
           storage_path?: string
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "kyc_documents_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "kyc_documents_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
           avatar_url: string | null
+          city: string | null
+          country: string | null
           created_at: string
-          email: string
+          email: string | null
           full_name: string | null
           id: string
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
+          user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
-          email: string
-          full_name?: string | null
-          id: string
-          phone?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          email?: string
+          email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -668,7 +540,7 @@ export type Database = {
         Row: {
           comment: string | null
           created_at: string
-          from_role: string
+          from_role: Database["public"]["Enums"]["app_role"]
           from_user_id: string
           id: string
           job_id: string
@@ -678,7 +550,7 @@ export type Database = {
         Insert: {
           comment?: string | null
           created_at?: string
-          from_role: string
+          from_role: Database["public"]["Enums"]["app_role"]
           from_user_id: string
           id?: string
           job_id: string
@@ -688,7 +560,7 @@ export type Database = {
         Update: {
           comment?: string | null
           created_at?: string
-          from_role?: string
+          from_role?: Database["public"]["Enums"]["app_role"]
           from_user_id?: string
           id?: string
           job_id?: string
@@ -697,43 +569,26 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ratings_from_user_id_fkey"
-            columns: ["from_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ratings_shift_id_fkey"
+            foreignKeyName: "ratings_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ratings_to_user_id_fkey"
-            columns: ["to_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
       user_roles: {
         Row: {
-          created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
-          created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
-          created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
@@ -745,141 +600,101 @@ export type Database = {
           amount: number
           business_id: string | null
           created_at: string
+          description: string | null
           id: string
           job_id: string | null
-          notes: string | null
-          status: Database["public"]["Enums"]["ledger_status"]
-          type: Database["public"]["Enums"]["ledger_type"]
+          status: Database["public"]["Enums"]["wallet_entry_status"]
+          type: Database["public"]["Enums"]["wallet_entry_type"]
+          updated_at: string
           worker_id: string | null
         }
         Insert: {
-          amount: number
+          amount?: number
           business_id?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           job_id?: string | null
-          notes?: string | null
-          status?: Database["public"]["Enums"]["ledger_status"]
-          type: Database["public"]["Enums"]["ledger_type"]
+          status?: Database["public"]["Enums"]["wallet_entry_status"]
+          type: Database["public"]["Enums"]["wallet_entry_type"]
+          updated_at?: string
           worker_id?: string | null
         }
         Update: {
           amount?: number
           business_id?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           job_id?: string | null
-          notes?: string | null
-          status?: Database["public"]["Enums"]["ledger_status"]
-          type?: Database["public"]["Enums"]["ledger_type"]
+          status?: Database["public"]["Enums"]["wallet_entry_status"]
+          type?: Database["public"]["Enums"]["wallet_entry_type"]
+          updated_at?: string
           worker_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "wallet_ledger_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wallet_ledger_shift_id_fkey"
+            foreignKeyName: "wallet_ledger_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wallet_ledger_worker_id_fkey"
-            columns: ["worker_id"]
-            isOneToOne: false
-            referencedRelation: "workers"
             referencedColumns: ["id"]
           },
         ]
       }
       workers: {
         Row: {
-          area: string | null
-          cancel_count: number | null
-          city: string | null
+          availability: string | null
+          bio: string | null
           created_at: string
-          dob: string | null
           id: string
-          no_show_count: number | null
-          rating_avg: number | null
-          rating_count: number | null
           skills: string[] | null
           updated_at: string
-          verification_status: Database["public"]["Enums"]["verification_status"]
+          verification_status: string
         }
         Insert: {
-          area?: string | null
-          cancel_count?: number | null
-          city?: string | null
+          availability?: string | null
+          bio?: string | null
           created_at?: string
-          dob?: string | null
           id: string
-          no_show_count?: number | null
-          rating_avg?: number | null
-          rating_count?: number | null
           skills?: string[] | null
           updated_at?: string
-          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verification_status?: string
         }
         Update: {
-          area?: string | null
-          cancel_count?: number | null
-          city?: string | null
+          availability?: string | null
+          bio?: string | null
           created_at?: string
-          dob?: string | null
           id?: string
-          no_show_count?: number | null
-          rating_avg?: number | null
-          rating_count?: number | null
           skills?: string[] | null
           updated_at?: string
-          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verification_status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "workers_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_admin_role: { Args: { _email: string }; Returns: string }
-      get_application_business_id: {
-        Args: { _application_id: string }
-        Returns: string
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
-      get_job_poster_id: { Args: { _job_id: string }; Returns: string }
-      get_shift_business_id: { Args: { _shift_id: string }; Returns: string }
-      is_admin: { Args: { _user_id?: string }; Returns: boolean }
-      is_admin_allowlisted: { Args: { _email: string }; Returns: boolean }
-      is_job_open: { Args: { _job_id: string }; Returns: boolean }
-      is_shift_open: { Args: { _shift_id: string }; Returns: boolean }
-      is_verified_business: { Args: { _user_id: string }; Returns: boolean }
-      is_verified_worker: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "worker" | "business" | "admin"
       application_status:
         | "applied"
+        | "shortlisted"
         | "accepted"
         | "rejected"
         | "cancelled"
-        | "no_show"
         | "completed"
-      attendance_method: "qr" | "manual"
+      attendance_method: "qr" | "gps" | "manual"
       dispute_status: "open" | "review" | "resolved" | "rejected"
       doc_status: "submitted" | "approved" | "rejected"
       doc_type:
@@ -889,7 +704,14 @@ export type Database = {
         | "commercial_reg"
         | "license"
         | "rep_id"
-      employment_type: "contract" | "permanent" | "temporary"
+      employment_type: "permanent" | "temporary" | "contract"
+      job_status:
+        | "draft"
+        | "open"
+        | "in_progress"
+        | "completed"
+        | "closed"
+        | "cancelled"
       job_type:
         | "shift"
         | "full_time"
@@ -897,23 +719,10 @@ export type Database = {
         | "freelance"
         | "digital_service"
         | "internship"
-      ledger_status: "pending" | "approved" | "paid" | "rejected"
-      ledger_type: "earning" | "adjustment" | "payout"
-      pay_type: "hourly" | "fixed"
       payment_model: "hourly" | "fixed" | "monthly" | "milestone"
       service_direction: "business_offers" | "worker_offers"
-      shift_status:
-        | "draft"
-        | "open"
-        | "filled"
-        | "in_progress"
-        | "completed"
-        | "cancelled"
-      verification_status:
-        | "not_started"
-        | "pending_review"
-        | "verified"
-        | "rejected"
+      wallet_entry_status: "pending" | "approved" | "paid" | "rejected"
+      wallet_entry_type: "earning" | "payout" | "bonus" | "deduction"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1044,13 +853,13 @@ export const Constants = {
       app_role: ["worker", "business", "admin"],
       application_status: [
         "applied",
+        "shortlisted",
         "accepted",
         "rejected",
         "cancelled",
-        "no_show",
         "completed",
       ],
-      attendance_method: ["qr", "manual"],
+      attendance_method: ["qr", "gps", "manual"],
       dispute_status: ["open", "review", "resolved", "rejected"],
       doc_status: ["submitted", "approved", "rejected"],
       doc_type: [
@@ -1061,7 +870,15 @@ export const Constants = {
         "license",
         "rep_id",
       ],
-      employment_type: ["contract", "permanent", "temporary"],
+      employment_type: ["permanent", "temporary", "contract"],
+      job_status: [
+        "draft",
+        "open",
+        "in_progress",
+        "completed",
+        "closed",
+        "cancelled",
+      ],
       job_type: [
         "shift",
         "full_time",
@@ -1070,25 +887,10 @@ export const Constants = {
         "digital_service",
         "internship",
       ],
-      ledger_status: ["pending", "approved", "paid", "rejected"],
-      ledger_type: ["earning", "adjustment", "payout"],
-      pay_type: ["hourly", "fixed"],
       payment_model: ["hourly", "fixed", "monthly", "milestone"],
       service_direction: ["business_offers", "worker_offers"],
-      shift_status: [
-        "draft",
-        "open",
-        "filled",
-        "in_progress",
-        "completed",
-        "cancelled",
-      ],
-      verification_status: [
-        "not_started",
-        "pending_review",
-        "verified",
-        "rejected",
-      ],
+      wallet_entry_status: ["pending", "approved", "paid", "rejected"],
+      wallet_entry_type: ["earning", "payout", "bonus", "deduction"],
     },
   },
 } as const

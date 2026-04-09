@@ -34,7 +34,7 @@ export default function WorkerJobs() {
           return app.status === 'completed';
         }
         if (tab === 'cancelled') {
-          return app.status === 'cancelled' || app.status === 'rejected' || app.status === 'no_show';
+          return app.status === 'cancelled' || app.status === 'rejected';
         }
         return false;
       })

@@ -16,7 +16,7 @@ export default function BusinessDashboard() {
   
   const { data: jobs, isLoading } = useMyPostedJobs();
 
-  const activeJobs = jobs?.filter(j => j.status === 'open' || j.status === 'filled') || [];
+  const activeJobs = jobs?.filter(j => j.status === 'open' || j.status === 'in_progress') || [];
   const upcomingJobs = jobs?.filter(j => j.status === 'in_progress') || [];
 
   const stats = [
