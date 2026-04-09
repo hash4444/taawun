@@ -20,14 +20,7 @@ export function useWorkerJob(jobId: string) {
                 .from('jobs')
                 .select(`
                     *,
-                    businesses (
-                        id,
-                        trade_name,
-                        legal_name,
-                        sector,
-                        rating_avg,
-                        rating_count
-                    )
+                    businesses (*)
                 `)
                 .eq('id', jobId)
                 .maybeSingle();
