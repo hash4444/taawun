@@ -44,30 +44,194 @@ export type Database = {
         }
         Relationships: []
       }
-      applications: {
+      ai_agent_logs: {
         Row: {
-          cover_letter: string | null
+          action: string
+          created_at: string
+          id: string
+          job_id: string | null
+          metadata: Json | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_agent_settings: {
+        Row: {
+          auto_apply_enabled: boolean
+          created_at: string
+          daily_application_limit: number
+          excluded_companies: string[]
+          excluded_keywords: string[]
+          id: string
+          last_run_at: string | null
+          minimum_match_score: number
+          require_user_approval: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_apply_enabled?: boolean
+          created_at?: string
+          daily_application_limit?: number
+          excluded_companies?: string[]
+          excluded_keywords?: string[]
+          id?: string
+          last_run_at?: string | null
+          minimum_match_score?: number
+          require_user_approval?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_apply_enabled?: boolean
+          created_at?: string
+          daily_application_limit?: number
+          excluded_companies?: string[]
+          excluded_keywords?: string[]
+          id?: string
+          last_run_at?: string | null
+          minimum_match_score?: number
+          require_user_approval?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_application_drafts: {
+        Row: {
+          cover_letter: string
           created_at: string
           id: string
           job_id: string
+          match_id: string | null
+          notes: string | null
+          submitted: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_letter: string
+          created_at?: string
+          id?: string
+          job_id: string
+          match_id?: string | null
+          notes?: string | null
+          submitted?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_letter?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          match_id?: string | null
+          notes?: string | null
+          submitted?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_application_drafts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "ai_job_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_job_matches: {
+        Row: {
+          created_at: string
+          explanation: string | null
+          gaps: string[]
+          id: string
+          job_id: string
+          score: number
+          status: Database["public"]["Enums"]["ai_match_status"]
+          strengths: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          explanation?: string | null
+          gaps?: string[]
+          id?: string
+          job_id: string
+          score: number
+          status?: Database["public"]["Enums"]["ai_match_status"]
+          strengths?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          explanation?: string | null
+          gaps?: string[]
+          id?: string
+          job_id?: string
+          score?: number
+          status?: Database["public"]["Enums"]["ai_match_status"]
+          strengths?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      applications: {
+        Row: {
+          cover_letter: string | null
+          cover_letter_ai: boolean
+          created_at: string
+          id: string
+          is_auto_applied: boolean
+          job_id: string
+          match_score: number | null
           status: Database["public"]["Enums"]["application_status"]
           updated_at: string
           worker_id: string
         }
         Insert: {
           cover_letter?: string | null
+          cover_letter_ai?: boolean
           created_at?: string
           id?: string
+          is_auto_applied?: boolean
           job_id: string
+          match_score?: number | null
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
           worker_id: string
         }
         Update: {
           cover_letter?: string | null
+          cover_letter_ai?: boolean
           created_at?: string
           id?: string
+          is_auto_applied?: boolean
           job_id?: string
+          match_score?: number | null
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
           worker_id?: string
@@ -331,6 +495,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      job_preferences: {
+        Row: {
+          availability: string | null
+          career_goal: string | null
+          created_at: string
+          id: string
+          industries: string[]
+          job_types: string[]
+          languages: string[]
+          locations: string[]
+          salary_currency: string | null
+          salary_min: number | null
+          skills: string[]
+          updated_at: string
+          user_id: string
+          work_modes: string[]
+        }
+        Insert: {
+          availability?: string | null
+          career_goal?: string | null
+          created_at?: string
+          id?: string
+          industries?: string[]
+          job_types?: string[]
+          languages?: string[]
+          locations?: string[]
+          salary_currency?: string | null
+          salary_min?: number | null
+          skills?: string[]
+          updated_at?: string
+          user_id: string
+          work_modes?: string[]
+        }
+        Update: {
+          availability?: string | null
+          career_goal?: string | null
+          created_at?: string
+          id?: string
+          industries?: string[]
+          job_types?: string[]
+          languages?: string[]
+          locations?: string[]
+          salary_currency?: string | null
+          salary_min?: number | null
+          skills?: string[]
+          updated_at?: string
+          user_id?: string
+          work_modes?: string[]
+        }
+        Relationships: []
       }
       jobs: {
         Row: {
@@ -689,6 +904,13 @@ export type Database = {
       }
     }
     Enums: {
+      ai_match_status:
+        | "matched"
+        | "drafted"
+        | "auto_applied"
+        | "needs_review"
+        | "skipped"
+        | "rejected"
       app_role: "worker" | "business" | "admin"
       application_status:
         | "applied"
@@ -853,6 +1075,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_match_status: [
+        "matched",
+        "drafted",
+        "auto_applied",
+        "needs_review",
+        "skipped",
+        "rejected",
+      ],
       app_role: ["worker", "business", "admin"],
       application_status: [
         "applied",
