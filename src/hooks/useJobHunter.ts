@@ -158,18 +158,22 @@ export function useDrafts() {
   });
 }
 
-export async function runJobHunter() {
-  const { data, error } = await supabase.functions.invoke("ai-job-hunter?action=run_user", {
-    body: { limit: 20 },
+async function callHunter(action: string, body: any = {}) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-job-hunter?action=${action}`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify(body),
   });
-  if (error) throw error;
-  return data;
+  const json = await r.json();
+  if (!r.ok) throw new Error(json.error ?? "Request failed");
+  return json;
 }
 
-export async function submitDraft(draftId: string) {
-  const { data, error } = await supabase.functions.invoke("ai-job-hunter?action=apply_draft", {
-    body: { draft_id: draftId },
-  });
-  if (error) throw error;
-  return data;
-}
+export const runJobHunter = () => callHunter("run_user", { limit: 20 });
+export const submitDraft = (draftId: string) => callHunter("apply_draft", { draft_id: draftId });
