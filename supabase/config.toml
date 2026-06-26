@@ -1,7 +1,10 @@
-project_id = "dkxvljfqwlgimkplaypi"
+project_id = "fvnemfbqpmweqzhzuflu"
 
 [functions.ai-job-hunter]
 verify_jwt = false
 
 [functions.chat]
+verify_jwt = false
+
+[functions.candidate-hunter]
 verify_jwt = false

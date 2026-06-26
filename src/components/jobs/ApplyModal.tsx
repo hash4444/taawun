@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Sparkles, CheckCircle2, AlertCircle, Rocket } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 interface ApplyModalProps {
@@ -38,12 +38,12 @@ export function ApplyModal({ open, onOpenChange, jobTitle, onApply, isApplying }
                     {/* Profile Completeness */}
                     <div className="space-y-3">
                         <div className="flex justify-between items-center text-sm font-semibold">
-                            <span className="text-muted-foreground uppercase tracking-wider text-[10px]">Profile Completeness</span>
+                            <span className="text-muted-foreground uppercase tracking-wider text-caption">Profile Completeness</span>
                             <span className={completeness >= 80 ? "text-success" : "text-amber-500"}>{completeness}%</span>
                         </div>
                         <Progress value={completeness} className="h-2" />
                         {completeness < 100 && (
-                            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                            <p className="text-caption text-muted-foreground flex items-center gap-1.5">
                                 <AlertCircle size={12} className="text-amber-500" />
                                 Add your education to reach 100% and rank higher.
                             </p>
@@ -57,8 +57,8 @@ export function ApplyModal({ open, onOpenChange, jobTitle, onApply, isApplying }
                                 <FileText size={18} className="text-primary" />
                             </div>
                             <div>
-                                <p className="text-sm font-bold">{hasCv ? 'Main_Resume_2024.pdf' : 'No CV Attached'}</p>
-                                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Standard Format</p>
+                                <p className="text-card-title font-bold">{hasCv ? 'Main_Resume_2024.pdf' : 'No CV Attached'}</p>
+                                <p className="text-caption text-muted-foreground uppercase font-bold tracking-tight">Standard Format</p>
                             </div>
                         </div>
                         {hasCv && <CheckCircle2 size={16} className="text-success" />}
@@ -71,11 +71,11 @@ export function ApplyModal({ open, onOpenChange, jobTitle, onApply, isApplying }
                                 <Sparkles size={16} />
                             </div>
                             <div className="flex-1">
-                                <h4 className="text-sm font-bold mb-1">AI CV Optimizer</h4>
-                                <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
+                                <h4 className="text-card-title font-bold mb-1">AI CV Optimizer</h4>
+                                <p className="text-caption text-muted-foreground leading-relaxed mb-3">
                                     Tailor your CV bullets specifically for the <span className="font-bold text-foreground underline decoration-primary/30">{jobTitle}</span> role to increase your interview chances.
                                 </p>
-                                <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold uppercase rounded-lg border-primary/20 hover:bg-primary/5" onClick={() => navigate('/worker/cv/builder')}>
+                                <Button variant="outline" size="sm" className="h-8 text-caption font-bold uppercase rounded-lg border-primary/20 hover:bg-primary/5" onClick={() => navigate('/worker/cv/builder')}>
                                     Optimize with AI
                                 </Button>
                             </div>

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface AgentSettings {
   id?: string;
@@ -55,7 +55,7 @@ export function useAgentSettings() {
     queryFn: async (): Promise<AgentSettings> => {
       if (!user) return defaultSettings;
       const { data } = await supabase.from("ai_agent_settings").select("*").eq("user_id", user.id).maybeSingle();
-      return (data as any) ?? defaultSettings;
+      return (data as unknown as AgentSettings) ?? defaultSettings;
     },
     enabled: !!user,
   });
@@ -83,7 +83,7 @@ export function useJobPreferences() {
     queryFn: async (): Promise<JobPreferences> => {
       if (!user) return defaultPrefs;
       const { data } = await supabase.from("job_preferences").select("*").eq("user_id", user.id).maybeSingle();
-      return (data as any) ?? defaultPrefs;
+      return (data as unknown as JobPreferences) ?? defaultPrefs;
     },
     enabled: !!user,
   });
@@ -158,7 +158,7 @@ export function useDrafts() {
   });
 }
 
-async function callHunter(action: string, body: any = {}) {
+async function callHunter(action: string, body: Record<string, unknown> = {}) {
   const { data: { session } } = await supabase.auth.getSession();
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-job-hunter?action=${action}`;
   const r = await fetch(url, {

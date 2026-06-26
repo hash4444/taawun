@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,9 +30,9 @@ export default function AdminLogin() {
 
     try {
       await signIn(email, password);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(isRTL ? 'فشل تسجيل الدخول' : 'Login failed', {
-        description: err?.message || 'Unknown error',
+        description: err instanceof Error ? err.message : 'Unknown error',
       });
       setLoading(false);
       return;

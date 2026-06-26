@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import type { Database } from '@/integrations/supabase/types';
+
+type ChatSessionRow = Database['public']['Tables']['chat_sessions']['Row'];
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -36,7 +38,7 @@ export function useChatSessions() {
     if (error) {
       console.error('Failed to fetch sessions:', error);
     } else {
-      setSessions((data || []).map((s: any) => ({
+      setSessions((data || []).map((s: ChatSessionRow) => ({
         ...s,
         messages: Array.isArray(s.messages) ? s.messages : [],
         metadata: s.metadata && typeof s.metadata === 'object' && !Array.isArray(s.metadata) ? s.metadata : {},

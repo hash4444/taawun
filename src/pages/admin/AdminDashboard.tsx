@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Shield, AlertTriangle, ChevronRight, ChevronLeft } from 'lucide-react';
 

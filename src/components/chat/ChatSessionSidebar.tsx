@@ -101,9 +101,9 @@ export function ChatSessionSidebar({
             <>
               <div className="flex items-center gap-1">
                 {s.is_pinned && <Pin size={10} className="text-muted-foreground flex-shrink-0" />}
-                <span className="text-xs font-medium text-foreground truncate block">{s.title}</span>
+                <span className="text-card-title font-medium text-foreground truncate block">{s.title}</span>
               </div>
-              <span className="text-[10px] text-muted-foreground">{formatDate(s.updated_at)}</span>
+              <span className="text-caption text-muted-foreground">{formatDate(s.updated_at)}</span>
             </>
           )}
         </div>
@@ -140,7 +140,7 @@ export function ChatSessionSidebar({
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-0.5">
           {activeSessions.length === 0 && (
-            <p className="text-[11px] text-muted-foreground text-center py-6">
+            <p className="text-caption text-muted-foreground text-center py-6">
               {isRTL ? 'لا توجد محادثات بعد' : 'No chats yet'}
             </p>
           )}
@@ -151,7 +151,7 @@ export function ChatSessionSidebar({
           <div className="p-2 pt-0">
             <button
               onClick={() => setShowArchived(!showArchived)}
-              className="flex items-center gap-1.5 w-full text-[11px] text-muted-foreground hover:text-foreground py-2 px-3 transition-colors"
+              className="flex items-center gap-1.5 w-full text-caption text-muted-foreground hover:text-foreground py-2 px-3 transition-colors"
             >
               <Archive size={11} />
               {isRTL ? `مؤرشف (${archivedSessions.length})` : `Archived (${archivedSessions.length})`}

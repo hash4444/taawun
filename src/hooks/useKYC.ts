@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 type KYCDocument = Database['public']['Tables']['kyc_documents']['Row'];
 type DocType = Database['public']['Enums']['doc_type'];
@@ -227,7 +227,7 @@ export function usePendingVerifications() {
       )];
 
       // Fetch workers with pending documents
-      let workers: any[] = [];
+      let workers: Record<string, unknown>[] = [];
       if (workerIds.length > 0) {
         const { data, error } = await supabase
           .from('workers')
@@ -247,7 +247,7 @@ export function usePendingVerifications() {
       }
 
       // Fetch businesses with pending documents
-      let businesses: any[] = [];
+      let businesses: Record<string, unknown>[] = [];
       if (businessIds.length > 0) {
         const { data, error } = await supabase
           .from('businesses')

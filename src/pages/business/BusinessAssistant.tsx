@@ -1,10 +1,12 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { BusinessDesktopShell } from '@/components/layout/BusinessDesktopShell';
 import { ChatMessage } from '@/components/chat/ChatMessage';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { Button } from '@/components/ui/button';
@@ -30,6 +32,7 @@ export default function BusinessAssistant() {
   const { isRTL } = useApp();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, sendMessage, clearMessages } = useChat('business-assistant');
   const [pendingShifts, setPendingShifts] = useState<ShiftData[] | null>(null);
@@ -88,8 +91,8 @@ export default function BusinessAssistant() {
       const data = await response.json();
       
       if (data.results) {
-        const successful = data.results.filter((r: any) => r.success);
-        const failed = data.results.filter((r: any) => !r.success);
+        const successful = data.results.filter((r: { success: boolean }) => r.success);
+        const failed = data.results.filter((r: { success: boolean }) => !r.success);
         
         if (successful.length > 0) {
           toast.success(
@@ -132,103 +135,135 @@ export default function BusinessAssistant() {
         'Cashier positions for this week',
       ];
 
+  const emptyState = (
+    <div className="flex flex-col items-center justify-center p-8 text-center h-full min-h-[400px]">
+      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+        <Bot className="w-8 h-8 text-primary" />
+      </div>
+      <h2 className="text-lg font-semibold mb-2">
+        {isRTL ? 'مرحباً! كيف أساعدك؟' : 'Hi! How can I help you?'}
+      </h2>
+      <p className="text-muted-foreground text-sm mb-6">
+        {isRTL
+          ? 'أخبرني عن الورديات التي تريد نشرها'
+          : 'Tell me about the shifts you want to post'}
+      </p>
+
+      <div className="space-y-2 w-full max-w-xs">
+        <p className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
+          <Sparkles size={12} />
+          {isRTL ? 'اقتراحات' : 'Suggestions'}
+        </p>
+        {suggestions.map((suggestion, i) => (
+          <button
+            key={i}
+            onClick={() => handleSend(suggestion)}
+            className="w-full p-3 text-sm rounded-xl border border-border bg-card hover:bg-muted transition-colors text-start"
+            dir={isRTL ? 'rtl' : 'ltr'}
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const messagesList = (
+    <div className="pb-4">
+      {messages.map((msg, i) => (
+        <ChatMessage key={i} role={msg.role} content={msg.content} isRTL={isRTL} />
+      ))}
+      {isLoading && messages[messages.length - 1]?.role === 'user' && (
+        <div className="flex gap-3 p-4">
+          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <Bot size={16} />
+          </div>
+          <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const pendingShiftsBar = pendingShifts && !isLoading && (
+    <div className="p-4 border-t bg-success/5">
+      <div className="flex items-center gap-2 mb-3">
+        <Check className="text-success" size={20} />
+        <span className="font-medium">
+          {isRTL
+            ? `${pendingShifts.length} وردية جاهزة للنشر`
+            : `${pendingShifts.length} shift(s) ready to post`}
+        </span>
+      </div>
+      <Button
+        onClick={handleCreateShifts}
+        className="w-full"
+        size="lg"
+        disabled={isCreating}
+      >
+        {isCreating ? (
+          <>
+            <Loader2 className="me-2 animate-spin" size={18} />
+            {isRTL ? 'جاري النشر...' : 'Creating...'}
+          </>
+        ) : (
+          isRTL ? 'نشر الورديات' : 'Create Shifts'
+        )}
+      </Button>
+    </div>
+  );
+
+  const chatInput = (
+    <ChatInput
+      onSend={handleSend}
+      disabled={isLoading}
+      placeholder={isRTL ? 'اكتب رسالتك...' : 'Type your message...'}
+      isRTL={isRTL}
+    />
+  );
+
+  if (!isMobile) {
+    return (
+      <BusinessDesktopShell>
+        <div className="flex flex-col h-[calc(100vh-7rem)] max-w-2xl mx-auto">
+          <h1 className="text-page-title text-foreground mb-4 flex-shrink-0">
+            {isRTL ? 'مساعد نشر الورديات' : 'Shift Posting Assistant'}
+          </h1>
+
+          <div className="flex-1 flex flex-col min-h-0 card-elevated overflow-hidden">
+            <ScrollArea className="flex-1" ref={scrollRef}>
+              {messages.length === 0 ? emptyState : messagesList}
+            </ScrollArea>
+
+            {pendingShiftsBar}
+
+            {chatInput}
+          </div>
+        </div>
+      </BusinessDesktopShell>
+    );
+  }
+
   return (
     <MobileLayout footer={<BottomNav />} noPadding>
-      <PageHeader 
+      <PageHeader
         title={isRTL ? 'مساعد نشر الورديات' : 'Shift Posting Assistant'}
         showBack
       />
-      
+
       <div className="flex-1 flex flex-col min-h-0">
         <ScrollArea className="flex-1" ref={scrollRef}>
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center h-full min-h-[400px]">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Bot className="w-8 h-8 text-primary" />
-              </div>
-              <h2 className="text-lg font-semibold mb-2">
-                {isRTL ? 'مرحباً! كيف أساعدك؟' : 'Hi! How can I help you?'}
-              </h2>
-              <p className="text-muted-foreground text-sm mb-6">
-                {isRTL 
-                  ? 'أخبرني عن الورديات التي تريد نشرها' 
-                  : 'Tell me about the shifts you want to post'}
-              </p>
-              
-              <div className="space-y-2 w-full max-w-xs">
-                <p className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
-                  <Sparkles size={12} />
-                  {isRTL ? 'اقتراحات' : 'Suggestions'}
-                </p>
-                {suggestions.map((suggestion, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSend(suggestion)}
-                    className="w-full p-3 text-sm rounded-xl border border-border bg-card hover:bg-muted transition-colors text-start"
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="pb-4">
-              {messages.map((msg, i) => (
-                <ChatMessage key={i} role={msg.role} content={msg.content} isRTL={isRTL} />
-              ))}
-              {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                <div className="flex gap-3 p-4">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <Bot size={16} />
-                  </div>
-                  <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {messages.length === 0 ? emptyState : messagesList}
         </ScrollArea>
-        
-        {pendingShifts && !isLoading && (
-          <div className="p-4 border-t bg-success/5">
-            <div className="flex items-center gap-2 mb-3">
-              <Check className="text-success" size={20} />
-              <span className="font-medium">
-                {isRTL 
-                  ? `${pendingShifts.length} وردية جاهزة للنشر` 
-                  : `${pendingShifts.length} shift(s) ready to post`}
-              </span>
-            </div>
-            <Button 
-              onClick={handleCreateShifts} 
-              className="w-full" 
-              size="lg"
-              disabled={isCreating}
-            >
-              {isCreating ? (
-                <>
-                  <Loader2 className="me-2 animate-spin" size={18} />
-                  {isRTL ? 'جاري النشر...' : 'Creating...'}
-                </>
-              ) : (
-                isRTL ? 'نشر الورديات' : 'Create Shifts'
-              )}
-            </Button>
-          </div>
-        )}
-        
-        <ChatInput
-          onSend={handleSend}
-          disabled={isLoading}
-          placeholder={isRTL ? 'اكتب رسالتك...' : 'Type your message...'}
-          isRTL={isRTL}
-        />
+
+        {pendingShiftsBar}
+
+        {chatInput}
       </div>
     </MobileLayout>
   );

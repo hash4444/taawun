@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
 import { Home, CalendarDays, Bell, User, LayoutDashboard, Plus, Sparkles, BarChart3 } from 'lucide-react';
 
 export function BottomNav() {

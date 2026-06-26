@@ -1,9 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
 import { ChatMessage } from '@/components/chat/ChatMessage';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatSessionSidebar } from '@/components/chat/ChatSessionSidebar';
@@ -28,6 +30,7 @@ import {
 } from 'lucide-react';
 
 type Message = { role: 'user' | 'assistant'; content: string };
+type UiAction = { type: string; [key: string]: unknown };
 
 const CHAT_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
@@ -110,6 +113,7 @@ const ACTION_CARDS: ActionCard[] = [
 export default function CareerAssistant() {
   const { isRTL } = useApp();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,7 +123,7 @@ export default function CareerAssistant() {
   const hasCV = cvRecords && cvRecords.length > 0;
 
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
-  const [uiActions, setUiActions] = useState<any[]>([]);
+  const [uiActions, setUiActions] = useState<UiAction[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -190,7 +194,7 @@ export default function CareerAssistant() {
         setActiveSessionId(data.threadId);
       }
 
-      const uploadAction = (data.uiActions || []).find((a: any) => a.type === 'UPLOAD_CV');
+      const uploadAction = (data.uiActions || []).find((a: UiAction) => a.type === 'UPLOAD_CV');
       if (uploadAction && fileInputRef.current) {
         setTimeout(() => fileInputRef.current?.click(), 100);
       }
@@ -204,13 +208,13 @@ export default function CareerAssistant() {
           }
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Chat error:', e);
       toast.error(isRTL ? 'حدث خطأ في الاتصال.' : 'Communication error.');
     } finally {
       setIsLoading(false);
     }
-  }, [activeSessionId, activeSession, updateSessionMessages, autoTitle, isRTL]);
+  }, [activeSessionId, activeSession, updateSessionMessages, autoTitle, isRTL, setActiveSessionId]);
 
   const handleSend = useCallback(async (input: string) => {
     if (!input.trim() || isLoading) return;
@@ -231,7 +235,7 @@ export default function CareerAssistant() {
     }
 
     await sendToAssistant(newMessages, sid || '');
-  }, [activeSessionId, messages, isLoading, createSession, updateSessionMessages, sendToAssistant]);
+  }, [activeSessionId, messages, isLoading, createSession, updateSessionMessages, sendToAssistant, setActiveSessionId]);
 
   const handleQuickAction = (key: string) => {
     const card = ACTION_CARDS.find(c => c.key === key);
@@ -266,6 +270,111 @@ export default function CareerAssistant() {
     />
   );
 
+  const fileInputEl = (
+    <input
+      type="file"
+      ref={fileInputRef}
+      className="hidden"
+      accept=".pdf,.doc,.docx"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file) toast.info(`File selected: ${file.name}`);
+      }}
+    />
+  );
+
+  const chatBody = (
+    <ScrollArea className="flex-1 bg-background/50" ref={scrollRef}>
+      {showWelcome ? (
+        <div className="w-full max-w-[600px] mx-auto px-4 pt-12 pb-4 flex flex-col items-center text-center">
+          <h2 className="text-[28px] font-semibold text-foreground mb-2">
+            {isRTL ? `مرحباً${userName ? ` ${userName}` : ''} 👋` : `Hi${userName ? ` ${userName}` : ''} 👋`}
+          </h2>
+          <div className="flex flex-col gap-3 items-center mt-8 w-full">
+            {ACTION_CARDS.map((card) => (
+              <button
+                key={card.key}
+                onClick={() => handleQuickAction(card.key)}
+                className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl border border-border bg-card hover:bg-accent transition-all w-full max-w-[400px]"
+              >
+                <card.icon size={18} className="text-muted-foreground" />
+                <span className="text-sm font-medium">{isRTL ? card.ar : card.en}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="w-full max-w-[800px] mx-auto pb-8">
+          {messages.map((msg, i) => (msg.content && msg.content.trim() !== '' && (
+            <ChatMessage key={i} role={msg.role} content={msg.content} isRTL={isRTL} />
+          )))}
+
+          {!isLoading && quickReplies.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-4 py-2 mt-4 ml-12" dir={isRTL ? 'rtl' : 'ltr'}>
+              {quickReplies.map((reply, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSend(reply)}
+                  className="px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
+                >
+                  {reply}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="flex gap-3 p-4 ml-2">
+              <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center animate-pulse"><Bot size={14} /></div>
+              <div className="bg-muted/50 rounded-xl px-4 py-2.5"><div className="flex gap-1.5"><span className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce" /><span className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce [animation-delay:0.2s]" /><span className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce [animation-delay:0.4s]" /></div></div>
+            </div>
+          )}
+        </div>
+      )}
+    </ScrollArea>
+  );
+
+  const chatInputBar = (
+    <div className="p-4 bg-background border-t border-border/50">
+      <ChatInput onSend={handleSend} disabled={isLoading} placeholder={isRTL ? 'كيف يمكنني مساعدتك؟' : 'How can I help you?'} isRTL={isRTL} />
+    </div>
+  );
+
+  if (!isMobile) {
+    return (
+      <ErrorBoundary>
+        <WorkerDesktopShell>
+          <div className="flex flex-col h-[calc(100vh-7rem)] max-w-3xl mx-auto">
+            <div className="flex items-center justify-between pb-4 flex-shrink-0">
+              <h1 className="text-page-title text-foreground">
+                {isRTL ? 'المساعد المهني' : 'Career Assistant'}
+              </h1>
+              <button
+                onClick={handleNewChat}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground text-body"
+              >
+                <Plus size={16} strokeWidth={1.5} />
+                {isRTL ? 'محادثة جديدة' : 'New Chat'}
+              </button>
+            </div>
+
+            <div className="flex-1 flex min-h-0 card-elevated overflow-hidden">
+              <aside className="w-64 flex-shrink-0 border-e border-border hidden lg:flex">
+                {sidebarContent}
+              </aside>
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                {chatBody}
+                {chatInputBar}
+              </div>
+            </div>
+          </div>
+
+          {fileInputEl}
+        </WorkerDesktopShell>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <MobileLayout footer={<BottomNav />} noPadding>
@@ -295,69 +404,11 @@ export default function CareerAssistant() {
         </div>
 
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <ScrollArea className="flex-1 bg-background/50" ref={scrollRef}>
-            {showWelcome ? (
-              <div className="w-full max-w-[600px] mx-auto px-4 pt-12 pb-4 flex flex-col items-center text-center">
-                <h2 className="text-[28px] font-semibold text-foreground mb-2">
-                  {isRTL ? `مرحباً${userName ? ` ${userName}` : ''} 👋` : `Hi${userName ? ` ${userName}` : ''} 👋`}
-                </h2>
-                <div className="flex flex-col gap-3 items-center mt-8 w-full">
-                  {ACTION_CARDS.map((card) => (
-                    <button
-                      key={card.key}
-                      onClick={() => handleQuickAction(card.key)}
-                      className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl border border-border bg-card hover:bg-accent transition-all w-full max-w-[400px]"
-                    >
-                      <card.icon size={18} className="text-muted-foreground" />
-                      <span className="text-sm font-medium">{isRTL ? card.ar : card.en}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="w-full max-w-[800px] mx-auto pb-8">
-                {messages.map((msg, i) => (msg.content && msg.content.trim() !== '' && (
-                  <ChatMessage key={i} role={msg.role} content={msg.content} isRTL={isRTL} />
-                )))}
-
-                {!isLoading && quickReplies.length > 0 && (
-                  <div className="flex flex-wrap gap-2 px-4 py-2 mt-4 ml-12" dir={isRTL ? 'rtl' : 'ltr'}>
-                    {quickReplies.map((reply, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSend(reply)}
-                        className="px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
-                      >
-                        {reply}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {isLoading && (
-                  <div className="flex gap-3 p-4 ml-2">
-                    <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center animate-pulse"><Bot size={14} /></div>
-                    <div className="bg-muted/50 rounded-xl px-4 py-2.5"><div className="flex gap-1.5"><span className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce" /><span className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce [animation-delay:0.2s]" /><span className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce [animation-delay:0.4s]" /></div></div>
-                  </div>
-                )}
-              </div>
-            )}
-          </ScrollArea>
-          <div className="p-4 bg-background border-t border-border/50">
-            <ChatInput onSend={handleSend} disabled={isLoading} placeholder={isRTL ? 'كيف يمكنني مساعدتك؟' : 'How can I help you?'} isRTL={isRTL} />
-          </div>
+          {chatBody}
+          {chatInputBar}
         </div>
 
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept=".pdf,.doc,.docx"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) toast.info(`File selected: ${file.name}`);
-          }}
-        />
+        {fileInputEl}
       </MobileLayout>
     </ErrorBoundary>
   );

@@ -16,8 +16,8 @@ serve(async (req) => {
 
   try {
     const { messages, context } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     // Try to load user context for richer responses
     let careerCtx = "";
@@ -38,26 +38,42 @@ serve(async (req) => {
       console.log("ctx load skipped", e);
     }
 
-    const systemPrompt = `You are Taawun Career Assistant — a personal career manager and job-hunting agent for workers across MENA and Africa.
+    const systemPrompt = `You are Taawun's career assistant — a real career coach for jobseekers across Jordan and the wider MENA region, not a generic chatbot bolted onto a job board.
 
-Behavior rules:
-- Act like a real career coach, not a chatbot. Be specific, proactive, and honest.
-- Use the user's CV, preferences, and AI matches when responding.
-- If info is missing, ask ONE focused follow-up question instead of guessing.
-- Never invent experience or skills.
-- Support both English and Arabic; reply in the user's language.
-- For requests like "apply to jobs for me", "pause auto apply", "only remote", explain the user can toggle these in their AI Job Hunter dashboard, and offer concrete next steps.
-- Keep responses concise and actionable. Use short bullet lists when helpful.
+How you think and talk:
+- Talk like a sharp, honest friend who happens to know the job market cold — not like a corporate HR bot. Vary your sentence structure; don't fall into the same "Here are 3 things you can do:" shape every single reply.
+- Lead with the most useful thing first. If someone's CV is thin in one area, say so plainly and explain why it matters for the roles they want — don't soften real feedback into mush.
+- When something is ambiguous or you don't have enough information, ask ONE focused question rather than guessing or giving generic advice that might not apply to them.
+- Never invent experience, skills, or qualifications the person doesn't actually have. If their CV doesn't support a claim, say what's missing instead of papering over it.
+- You have real information about this person below (CV, preferences, AI agent settings, current job matches) — use it naturally, the way a coach who already knows your file would, instead of asking them to repeat things you can already see.
+- If you don't know something or aren't sure, say so plainly. Don't bluff confidence you don't have.
+- Match the person's energy and language — reply in Arabic if they write in Arabic, English if they write in English, and keep the same directness either way.
+- For requests like "apply to jobs for me" or "only show remote roles," tell them exactly where to make that change (the AI Job Hunter dashboard) and what setting to look for — be specific, not vague ("you can adjust your preferences there" is not specific; "open AI Job Hunter and raise your minimum match score" is).
+- Keep replies tight. A few sentences of real substance beats a long list of generic tips. Use a short bullet list only when the content is genuinely a list (e.g. concrete next steps), not as a default format.
 
-User career context (may be partial): ${careerCtx || "none"}
-${context ? `Additional UI context: ${JSON.stringify(context)}` : ""}`;
+What you know about this person right now (may be partial — don't assume missing fields mean the person has nothing, just that you don't have it yet): ${careerCtx || "nothing yet — this looks like a new user, so it's worth asking what they're looking for before diving into advice"}
+${context ? `Additional context from what they're currently looking at in the app: ${JSON.stringify(context)}` : ""}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Anthropic Messages API: system prompt is a top-level field, not a
+    // message with role "system" — and it only accepts user/assistant roles
+    // in the messages array.
+    const anthropicMessages = messages.map((m: { role: string; content: string }) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: m.content,
+    }));
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        model: "claude-sonnet-4-6",
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: anthropicMessages,
         stream: true,
       }),
     });
@@ -66,11 +82,8 @@ ${context ? `Additional UI context: ${JSON.stringify(context)}` : ""}`;
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited. Try again in a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("Anthropic API error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI service error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

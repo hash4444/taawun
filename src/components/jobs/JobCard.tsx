@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { MapPin, Clock, Calendar, Banknote, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -71,12 +71,12 @@ export function JobCard({ job, variant = 'default', className }: JobCardProps) {
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="font-medium text-foreground truncate">{job.title}</h3>
-            <p className="text-sm text-muted-foreground">{companyName}</p>
+            <h3 className="font-medium text-card-title text-foreground truncate">{job.title}</h3>
+            <p className="text-body text-muted-foreground">{companyName}</p>
           </div>
           <div className="text-end flex-shrink-0">
             <p className="font-semibold text-primary">{formatPay()}</p>
-            <p className="text-xs text-muted-foreground">{formatDate(job.start_time)}</p>
+            <p className="text-caption text-muted-foreground">{formatDate(job.start_time)}</p>
           </div>
         </div>
       </button>
@@ -95,11 +95,11 @@ export function JobCard({ job, variant = 'default', className }: JobCardProps) {
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-foreground text-base">{job.title}</h3>
+            <h3 className="font-semibold text-foreground text-card-title">{job.title}</h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{companyName}</span>
-            <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
+            <span className="text-body text-muted-foreground">{companyName}</span>
+            <span className="text-caption px-2 py-0.5 bg-muted rounded-full">
               {JOB_TYPE_LABELS[job.job_type]?.[isRTL ? 'ar' : 'en'] || job.job_type}
             </span>
           </div>
@@ -108,24 +108,24 @@ export function JobCard({ job, variant = 'default', className }: JobCardProps) {
 
       {/* Details */}
       <div className="space-y-2 mb-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-caption text-muted-foreground">
           <MapPin size={14} className="flex-shrink-0 text-primary" />
           <span className="truncate">{job.address || (isRTL ? 'الرياض' : 'Riyadh')}</span>
           {job.remote_allowed && (
-            <span className="text-xs bg-success-light text-success px-2 py-0.5 rounded-full">
+            <span className="text-caption bg-success-light text-success px-2 py-0.5 rounded-full">
               {isRTL ? 'عن بعد' : 'Remote'}
             </span>
           )}
         </div>
-        
+
         {job.job_type === 'shift' && (
           <>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-caption text-muted-foreground">
               <Calendar size={14} className="flex-shrink-0 text-primary" />
               <span>{formatDate(job.start_time)}</span>
             </div>
-            
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+
+            <div className="flex items-center gap-2 text-caption text-muted-foreground">
               <Clock size={14} className="flex-shrink-0 text-primary" />
               <span>{formatTime(job.start_time)} - {formatTime(job.end_time)}</span>
             </div>
@@ -141,7 +141,7 @@ export function JobCard({ job, variant = 'default', className }: JobCardProps) {
         </div>
         
         {variant === 'business' && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-caption text-muted-foreground">
             {job.slots_filled || 0}/{job.slots_total} {isRTL ? 'متقدمين' : 'applicants'}
           </span>
         )}

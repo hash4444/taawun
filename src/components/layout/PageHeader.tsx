@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
@@ -9,18 +9,21 @@ interface PageHeaderProps {
   subtitle?: string;
   showBack?: boolean;
   backPath?: string;
+  onBack?: () => void;
   action?: ReactNode;
   className?: string;
 }
 
-export function PageHeader({ title, subtitle, showBack, backPath, action, className }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, showBack, backPath, onBack, action, className }: PageHeaderProps) {
   const navigate = useNavigate();
   const { isRTL } = useApp();
-  
+
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
 
   const handleBack = () => {
-    if (backPath) {
+    if (onBack) {
+      onBack();
+    } else if (backPath) {
       navigate(backPath);
     } else {
       navigate(-1);

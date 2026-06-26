@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -176,6 +178,7 @@ export default function WorkerNotifications() {
   const { isRTL } = useApp();
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [readIds, setReadIds] = useState<Set<string>>(
     new Set(MOCK_NOTIFICATIONS.filter(n => n.read).map(n => n.id))
@@ -193,6 +196,131 @@ export default function WorkerNotifications() {
 
   const markRead = (id: string) => setReadIds(prev => new Set(prev).add(id));
 
+  const tabsRow = (
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+      {TABS.map(tab => (
+        <button
+          key={tab.key}
+          onClick={() => setActiveTab(tab.key)}
+          className={cn(
+            'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
+            activeTab === tab.key
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:text-foreground'
+          )}
+        >
+          {isRTL ? tab.ar : tab.en}
+        </button>
+      ))}
+    </div>
+  );
+
+  const emptyState = (
+    <div className="text-center py-12">
+      <p className="text-sm text-muted-foreground">
+        {isRTL ? 'لا توجد إشعارات' : 'No notifications'}
+      </p>
+    </div>
+  );
+
+  const renderNotifRow = (notif: Notification, dense: boolean) => {
+    const Icon = notif.icon;
+    const isRead = readIds.has(notif.id);
+
+    return (
+      <div
+        key={notif.id}
+        onClick={() => markRead(notif.id)}
+        className={cn(
+          'rounded-xl border bg-card transition-all hover:shadow-sm cursor-pointer',
+          dense ? 'p-4' : 'p-3',
+          isRead ? 'border-border/40' : 'border-primary/20 bg-primary-light/30'
+        )}
+      >
+        <div className="flex gap-3">
+          {/* Icon */}
+          <div
+            className={cn(
+              'rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
+              dense ? 'w-9 h-9' : 'w-8 h-8',
+              notif.iconBg
+            )}
+          >
+            <Icon size={dense ? 16 : 14} className={notif.iconColor} strokeWidth={1.8} />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h3
+                className={cn(
+                  'text-card-title leading-snug',
+                  isRead
+                    ? 'font-medium text-foreground/80'
+                    : 'font-semibold text-foreground'
+                )}
+              >
+                {isRTL ? notif.headlineAr : notif.headline}
+              </h3>
+              {!isRead && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+              )}
+            </div>
+            <p className="text-body text-muted-foreground leading-snug mt-0.5">
+              {isRTL ? notif.bodyAr : notif.body}
+            </p>
+
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-caption text-muted-foreground/60">
+                {notif.timestamp}
+              </span>
+              {notif.action && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    markRead(notif.id);
+                    navigate(notif.action!.path);
+                  }}
+                  className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  {isRTL ? notif.action.labelAr : notif.action.label}
+                  <ChevronRight size={12} className={isRTL ? 'rotate-180' : ''} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (!isMobile) {
+    return (
+      <WorkerDesktopShell>
+        <div className="space-y-6 max-w-4xl">
+          <div className="flex items-center gap-3">
+            <h1 className="text-page-title text-foreground">{isRTL ? 'الإشعارات' : 'Notifications'}</h1>
+            {unreadCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-none">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+
+          {tabsRow}
+
+          {filtered.length === 0 ? (
+            emptyState
+          ) : (
+            <div className="space-y-2">
+              {filtered.map(notif => renderNotifRow(notif, true))}
+            </div>
+          )}
+        </div>
+      </WorkerDesktopShell>
+    );
+  }
+
   return (
     <MobileLayout footer={<BottomNav />} noPadding>
       {/* Header */}
@@ -209,102 +337,12 @@ export default function WorkerNotifications() {
 
       {/* Tabs */}
       <div className="px-4 pt-2 pb-3">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
-                activeTab === tab.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {isRTL ? tab.ar : tab.en}
-            </button>
-          ))}
-        </div>
+        {tabsRow}
       </div>
 
       {/* Notification List */}
       <div className="px-4 pb-4 space-y-2">
-        {filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-muted-foreground">
-              {isRTL ? 'لا توجد إشعارات' : 'No notifications'}
-            </p>
-          </div>
-        ) : (
-          filtered.map(notif => {
-            const Icon = notif.icon;
-            const isRead = readIds.has(notif.id);
-
-            return (
-              <div
-                key={notif.id}
-                onClick={() => markRead(notif.id)}
-                className={cn(
-                  'rounded-xl border bg-card p-3 transition-all hover:shadow-sm cursor-pointer',
-                  isRead ? 'border-border/40' : 'border-primary/20 bg-primary-light/30'
-                )}
-              >
-                <div className="flex gap-3">
-                  {/* Icon */}
-                  <div
-                    className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
-                      notif.iconBg
-                    )}
-                  >
-                    <Icon size={14} className={notif.iconColor} strokeWidth={1.8} />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3
-                        className={cn(
-                          'text-[12px] leading-snug',
-                          isRead
-                            ? 'font-medium text-foreground/80'
-                            : 'font-semibold text-foreground'
-                        )}
-                      >
-                        {isRTL ? notif.headlineAr : notif.headline}
-                      </h3>
-                      {!isRead && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                      {isRTL ? notif.bodyAr : notif.body}
-                    </p>
-
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-[10px] text-muted-foreground/60">
-                        {notif.timestamp}
-                      </span>
-                      {notif.action && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markRead(notif.id);
-                            navigate(notif.action!.path);
-                          }}
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
-                        >
-                          {isRTL ? notif.action.labelAr : notif.action.label}
-                          <ChevronRight size={12} className={isRTL ? 'rotate-180' : ''} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
+        {filtered.length === 0 ? emptyState : filtered.map(notif => renderNotifRow(notif, false))}
       </div>
     </MobileLayout>
   );

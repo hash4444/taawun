@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { useLocation } from '@/hooks/useLocation';
 import { MEA_COUNTRIES } from '@/lib/mea-locations';
 import { MapPin, ChevronDown, LocateFixed, Check, X } from 'lucide-react';

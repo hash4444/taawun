@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { ChevronLeft, ChevronRight, Phone } from 'lucide-react';
+import { Phone } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function VerifyPhone() {
   const navigate = useNavigate();
@@ -16,8 +17,6 @@ export default function VerifyPhone() {
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
-
-  const BackIcon = isRTL ? ChevronRight : ChevronLeft;
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,29 +49,18 @@ export default function VerifyPhone() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <div className="px-4 pt-safe">
-        <button
-          onClick={() => step === 'otp' ? setStep('phone') : navigate(-1)}
-          className="flex items-center gap-1 py-4 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <BackIcon size={20} />
-          <span>{t('back')}</span>
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 px-6 py-4">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          {t('verifyPhone')}
-        </h1>
-        <p className="text-muted-foreground mb-8">
-          {step === 'phone'
-            ? isRTL ? 'سنرسل لك رمز تحقق' : "We'll send you a verification code"
+      <PageHeader
+        title={t('verifyPhone')}
+        subtitle={
+          step === 'phone'
+            ? (isRTL ? 'سنرسل لك رمز تحقق' : "We'll send you a verification code")
             : `${t('otpSent')} ${phone}`
-          }
-        </p>
+        }
+        showBack
+        onBack={() => step === 'otp' ? setStep('phone') : navigate(-1)}
+      />
 
+      <div className="flex-1 px-6">
         {step === 'phone' ? (
           <form onSubmit={handleSendOtp} className="space-y-6">
             <div className="space-y-2">

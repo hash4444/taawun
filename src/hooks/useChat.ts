@@ -75,6 +75,9 @@ export function useChat(_threadId?: string) {
 
           if (line.endsWith('\r')) line = line.slice(0, -1);
           if (line.startsWith(':') || line.trim() === '') continue;
+          // Anthropic SSE sends "event: <type>" lines ahead of each "data: "
+          // line; we only need the data payload, so non-data lines are
+          // skipped (this also harmlessly skips OpenAI-style comment lines).
           if (!line.startsWith('data: ')) continue;
 
           const jsonStr = line.slice(6).trim();
@@ -82,8 +85,12 @@ export function useChat(_threadId?: string) {
 
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) upsertAssistant(content);
+            // Anthropic Messages API streaming format: text arrives via
+            // content_block_delta events shaped { delta: { type: "text_delta", text } }.
+            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+              const content = parsed.delta.text as string | undefined;
+              if (content) upsertAssistant(content);
+            }
           } catch {
             textBuffer = line + '\n' + textBuffer;
             break;

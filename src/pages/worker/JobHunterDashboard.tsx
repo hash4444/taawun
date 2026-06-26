@@ -9,18 +9,51 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Loader2, Sparkles, Bot, AlertCircle, CheckCircle2, FileText, Zap, Shield, Send } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileLayout } from "@/components/layout/MobileLayout";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { WorkerDesktopShell } from "@/components/layout/WorkerDesktopShell";
 import {
   useAgentSettings, useSaveAgentSettings,
   useJobPreferences, useSaveJobPreferences,
   useJobMatches, useDrafts, useAgentLogs,
   runJobHunter, submitDraft,
+  AgentSettings, JobPreferences,
 } from "@/hooks/useJobHunter";
 import { useCVRecords } from "@/hooks/useCV";
 
 const JOB_TYPES = ["full-time", "part-time", "internship", "freelance", "contract"];
 const WORK_MODES = ["remote", "hybrid", "on-site"];
 
+interface JobMatchItem {
+  id: string;
+  job_id: string;
+  score: number;
+  status: string;
+  explanation?: string;
+  strengths?: string[];
+  gaps?: string[];
+  jobs?: { title?: string; company_name?: string; location?: string } | null;
+}
+
+interface DraftItem {
+  id: string;
+  job_id: string;
+  cover_letter?: string;
+  jobs?: { title?: string; company_name?: string } | null;
+  ai_job_matches?: { score?: number; explanation?: string } | null;
+}
+
+interface AgentLogItem {
+  id: string;
+  action: string;
+  reason?: string;
+  created_at: string;
+}
+
 export default function JobHunterDashboard() {
+  const isMobile = useIsMobile();
   const { data: settings } = useAgentSettings();
   const { data: prefs } = useJobPreferences();
   const { data: matches = [] } = useJobMatches();
@@ -31,8 +64,8 @@ export default function JobHunterDashboard() {
   const savePrefs = useSaveJobPreferences();
 
   const [running, setRunning] = useState(false);
-  const [localSettings, setLocalSettings] = useState<any>(null);
-  const [localPrefs, setLocalPrefs] = useState<any>(null);
+  const [localSettings, setLocalSettings] = useState<AgentSettings | null>(null);
+  const [localPrefs, setLocalPrefs] = useState<JobPreferences | null>(null);
 
   const s = localSettings ?? settings;
   const p = localPrefs ?? prefs;
@@ -40,11 +73,15 @@ export default function JobHunterDashboard() {
   const hasCV = cvs.length > 0;
   const status = !hasCV ? "needs_setup" : s?.auto_apply_enabled ? "active" : "paused";
 
+  const typedMatches = matches as unknown as JobMatchItem[];
+  const typedDrafts = drafts as unknown as DraftItem[];
+  const typedLogs = logs as unknown as AgentLogItem[];
+
   const stats = {
-    scanned: logs.filter((l: any) => l.action === "scored_job").length,
-    matched: matches.length,
-    applied: matches.filter((m: any) => m.status === "auto_applied").length,
-    review: matches.filter((m: any) => m.status === "needs_review").length + drafts.length,
+    scanned: typedLogs.filter((l) => l.action === "scored_job").length,
+    matched: typedMatches.length,
+    applied: typedMatches.filter((m) => m.status === "auto_applied").length,
+    review: typedMatches.filter((m) => m.status === "needs_review").length + typedDrafts.length,
   };
 
   const handleRun = async () => {
@@ -53,8 +90,8 @@ export default function JobHunterDashboard() {
     try {
       const r = await runJobHunter();
       toast.success(`Scanned ${r.scanned}, matched ${r.matched}, applied ${r.applied}`);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setRunning(false);
     }
@@ -62,49 +99,47 @@ export default function JobHunterDashboard() {
 
   const toggleArr = (arr: string[], v: string) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
 
-  return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 pb-24 max-w-6xl">
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Bot className="h-7 w-7 text-primary" /> AI Job Hunter
-          </h1>
-          <p className="text-muted-foreground mt-1">Your personal career manager — scans, matches, and applies for you.</p>
-        </div>
+  const statusBadge = (
+    <Badge variant={status === "active" ? "default" : status === "paused" ? "secondary" : "destructive"} className="text-caption py-1 px-2.5 whitespace-nowrap">
+      {status === "active" && <CheckCircle2 className="h-3 w-3 mr-1" />}
+      {status === "paused" && <Shield className="h-3 w-3 mr-1" />}
+      {status === "needs_setup" && <AlertCircle className="h-3 w-3 mr-1" />}
+      {status === "active" ? "Active" : status === "paused" ? "Paused" : "Needs Setup"}
+    </Badge>
+  );
+
+  const runButton = (
+    <Button onClick={handleRun} disabled={running} className="w-full">
+      {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+      Run now
+    </Button>
+  );
+
+  const noCvCard = !hasCV && (
+    <Card className="border-warning bg-warning/5">
+      <CardContent className="pt-6 flex flex-col items-start gap-3">
         <div className="flex items-center gap-3">
-          <Badge variant={status === "active" ? "default" : status === "paused" ? "secondary" : "destructive"} className="text-sm py-1.5 px-3">
-            {status === "active" && <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
-            {status === "paused" && <Shield className="h-3.5 w-3.5 mr-1.5" />}
-            {status === "needs_setup" && <AlertCircle className="h-3.5 w-3.5 mr-1.5" />}
-            {status === "active" ? "Active" : status === "paused" ? "Paused" : "Needs Setup"}
-          </Badge>
-          <Button onClick={handleRun} disabled={running}>
-            {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-            Run now
-          </Button>
+          <AlertCircle className="h-5 w-5 text-warning flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">No CV found</p>
+            <p className="text-body text-muted-foreground">Upload or create a CV to enable AI matching and auto-apply.</p>
+          </div>
         </div>
-      </div>
+        <Button variant="outline" className="w-full" asChild><a href="/worker/cv">Go to CV Center</a></Button>
+      </CardContent>
+    </Card>
+  );
 
-      {!hasCV && (
-        <Card className="border-warning bg-warning/5">
-          <CardContent className="pt-6 flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-warning" />
-            <div className="flex-1">
-              <p className="font-medium">No CV found</p>
-              <p className="text-sm text-muted-foreground">Upload or create a CV to enable AI matching and auto-apply.</p>
-            </div>
-            <Button variant="outline" asChild><a href="/worker/cv">Go to CV Center</a></Button>
-          </CardContent>
-        </Card>
-      )}
+  const statCards = (gridCols: string) => (
+    <div className={`grid ${gridCols} gap-3`}>
+      <StatCard icon={<Zap className="h-4 w-4" />} label="Scanned" value={stats.scanned} />
+      <StatCard icon={<Sparkles className="h-4 w-4" />} label="Matched" value={stats.matched} />
+      <StatCard icon={<Send className="h-4 w-4" />} label="Auto-applied" value={stats.applied} />
+      <StatCard icon={<FileText className="h-4 w-4" />} label="Needs review" value={stats.review} />
+    </div>
+  );
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard icon={<Zap className="h-4 w-4" />} label="Scanned" value={stats.scanned} />
-        <StatCard icon={<Sparkles className="h-4 w-4" />} label="Matched" value={stats.matched} />
-        <StatCard icon={<Send className="h-4 w-4" />} label="Auto-applied" value={stats.applied} />
-        <StatCard icon={<FileText className="h-4 w-4" />} label="Needs review" value={stats.review} />
-      </div>
-
+  const tabsSection = (
       <Tabs defaultValue="matches" className="space-y-4">
         <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="matches">Matches</TabsTrigger>
@@ -114,31 +149,31 @@ export default function JobHunterDashboard() {
         </TabsList>
 
         <TabsContent value="matches" className="space-y-3">
-          {matches.length === 0 && <EmptyState text='No matches yet — press "Run now" to scan jobs.' />}
-          {matches.map((m: any) => (
+          {typedMatches.length === 0 && <EmptyState text='No matches yet — press "Run now" to scan jobs.' />}
+          {typedMatches.map((m) => (
             <Card key={m.id}>
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <h3 className="font-semibold truncate">{m.jobs?.title ?? "Job"}</h3>
-                    <p className="text-sm text-muted-foreground truncate">{m.jobs?.company_name} • {m.jobs?.location}</p>
+                    <h3 className="font-semibold text-card-title truncate">{m.jobs?.title ?? "Job"}</h3>
+                    <p className="text-caption text-muted-foreground truncate">{m.jobs?.company_name} • {m.jobs?.location}</p>
                   </div>
                   <ScoreBadge score={m.score} />
                 </div>
                 <Progress value={m.score} className="h-1.5" />
-                <p className="text-sm">{m.explanation}</p>
+                <p className="text-body">{m.explanation}</p>
                 {m.strengths?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {m.strengths.slice(0, 4).map((s: string, i: number) => (
-                      <Badge key={i} variant="secondary" className="text-xs">+ {s}</Badge>
+                      <Badge key={i} variant="secondary" className="text-caption">+ {s}</Badge>
                     ))}
                     {m.gaps?.slice(0, 2).map((g: string, i: number) => (
-                      <Badge key={`g${i}`} variant="outline" className="text-xs">− {g}</Badge>
+                      <Badge key={`g${i}`} variant="outline" className="text-caption">− {g}</Badge>
                     ))}
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs capitalize">{m.status.replace("_", " ")}</Badge>
+                  <Badge variant="outline" className="text-caption capitalize">{m.status.replace("_", " ")}</Badge>
                   <Button size="sm" variant="ghost" asChild><a href={`/worker/jobs/${m.job_id}`}>View job →</a></Button>
                 </div>
               </CardContent>
@@ -147,25 +182,25 @@ export default function JobHunterDashboard() {
         </TabsContent>
 
         <TabsContent value="review" className="space-y-3">
-          {drafts.length === 0 && <EmptyState text="No drafts to review." />}
-          {drafts.map((d: any) => (
+          {typedDrafts.length === 0 && <EmptyState text="No drafts to review." />}
+          {typedDrafts.map((d) => (
             <Card key={d.id}>
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <h3 className="font-semibold truncate">{d.jobs?.title}</h3>
-                    <p className="text-sm text-muted-foreground truncate">{d.jobs?.company_name}</p>
+                    <h3 className="font-semibold text-card-title truncate">{d.jobs?.title}</h3>
+                    <p className="text-caption text-muted-foreground truncate">{d.jobs?.company_name}</p>
                   </div>
                   {d.ai_job_matches?.score && <ScoreBadge score={d.ai_job_matches.score} />}
                 </div>
-                <div className="bg-muted/40 rounded-md p-3 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
+                <div className="bg-muted/40 rounded-md p-3 text-body whitespace-pre-wrap max-h-40 overflow-y-auto">
                   {d.cover_letter}
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button size="sm" variant="outline" asChild><a href={`/worker/jobs/${d.job_id}`}>View job</a></Button>
                   <Button size="sm" onClick={async () => {
                     try { await submitDraft(d.id); toast.success("Application submitted"); }
-                    catch (e: any) { toast.error(e.message); }
+                    catch (e: unknown) { toast.error(e instanceof Error ? e.message : String(e)); }
                   }}>
                     <Send className="h-4 w-4 mr-1.5" /> Apply
                   </Button>
@@ -291,16 +326,16 @@ export default function JobHunterDashboard() {
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-2">
-          {logs.length === 0 && <EmptyState text="No activity yet." />}
-          {logs.map((l: any) => (
+          {typedLogs.length === 0 && <EmptyState text="No activity yet." />}
+          {typedLogs.map((l) => (
             <Card key={l.id}>
               <CardContent className="py-3 flex items-start gap-3">
                 <Bot className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium capitalize">{l.action.replace(/_/g, " ")}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{l.reason}</p>
+                  <p className="text-card-title font-medium capitalize">{l.action.replace(/_/g, " ")}</p>
+                  <p className="text-caption text-muted-foreground line-clamp-2">{l.reason}</p>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                <span className="text-caption text-muted-foreground whitespace-nowrap">
                   {new Date(l.created_at).toLocaleString()}
                 </span>
               </CardContent>
@@ -308,7 +343,54 @@ export default function JobHunterDashboard() {
           ))}
         </TabsContent>
       </Tabs>
-    </div>
+  );
+
+  if (!isMobile) {
+    return (
+      <WorkerDesktopShell>
+        <div className="max-w-6xl space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-page-title text-foreground">AI Job Hunter</h1>
+              <p className="text-body text-muted-foreground mt-1">
+                Your personal career manager — scans, matches, and applies for you.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {statusBadge}
+              <div className="w-40">{runButton}</div>
+            </div>
+          </div>
+
+          {noCvCard}
+
+          {statCards('grid-cols-4')}
+
+          {tabsSection}
+        </div>
+      </WorkerDesktopShell>
+    );
+  }
+
+  return (
+    <MobileLayout footer={<BottomNav />} noPadding>
+      <PageHeader
+        title="AI Job Hunter"
+        subtitle="Your personal career manager — scans, matches, and applies for you."
+        showBack
+        action={statusBadge}
+      />
+
+      <div className="px-4 space-y-4 pb-4">
+        {runButton}
+
+        {noCvCard}
+
+        {statCards('grid-cols-2')}
+
+        {tabsSection}
+      </div>
+    </MobileLayout>
   );
 }
 
@@ -316,7 +398,7 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="flex items-center gap-2 text-muted-foreground text-xs">{icon}<span>{label}</span></div>
+        <div className="flex items-center gap-2 text-muted-foreground text-caption">{icon}<span>{label}</span></div>
         <p className="text-2xl font-bold mt-1">{value}</p>
       </CardContent>
     </Card>

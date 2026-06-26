@@ -1,7 +1,17 @@
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { BusinessDesktopShell } from '@/components/layout/BusinessDesktopShell';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Wallet, TrendingDown, Clock, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { useBusinessWallet } from '@/hooks/useWallet';
 import { format } from 'date-fns';
@@ -9,6 +19,7 @@ import { ar, enUS } from 'date-fns/locale';
 
 export default function BusinessWallet() {
   const { t, isRTL } = useApp();
+  const isMobile = useIsMobile();
   const { data: transactions, isLoading } = useBusinessWallet();
 
   // Calculate business wallet balance
@@ -31,6 +42,98 @@ export default function BusinessWallet() {
   const formatCurrency = (amount: number) => {
     return `${amount.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ${isRTL ? 'ر.س' : 'SAR'}`;
   };
+
+  if (!isMobile) {
+    return (
+      <BusinessDesktopShell>
+        <div className="space-y-6">
+          <h1 className="text-page-title text-foreground">{t('wallet')}</h1>
+
+          <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 text-primary-foreground max-w-2xl">
+            <div className="flex items-center gap-2 mb-4">
+              <Wallet size={20} />
+              <span className="text-body opacity-90">{t('availableBalance')}</span>
+            </div>
+
+            <div className="text-3xl font-bold mb-6">{formatCurrency(balance.available)}</div>
+
+            <div className="flex gap-3">
+              <div className="flex-1 bg-primary-foreground/10 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingDown size={14} className="opacity-75" />
+                  <span className="text-caption opacity-75">{t('totalPayments')}</span>
+                </div>
+                <p className="font-semibold">{formatCurrency(balance.totalPayments)}</p>
+              </div>
+              <div className="flex-1 bg-primary-foreground/10 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock size={14} className="opacity-75" />
+                  <span className="text-caption opacity-75">{t('pendingBalance')}</span>
+                </div>
+                <p className="font-semibold">{formatCurrency(balance.pending)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-elevated overflow-hidden">
+            <div className="px-5 py-4 border-b border-border">
+              <h2 className="text-card-title font-semibold text-foreground">{t('transactionHistory')}</h2>
+            </div>
+
+            {isLoading ? (
+              <div className="p-5 space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+                ))}
+              </div>
+            ) : !transactions || transactions.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">{t('noTransactions')}</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{isRTL ? 'الوظيفة' : 'Job'}</TableHead>
+                    <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
+                    <TableHead>{isRTL ? 'المبلغ' : 'Amount'}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                              tx.type === 'earning' ? 'bg-success-light' : 'bg-muted'
+                            }`}
+                          >
+                            {tx.type === 'earning' ? (
+                              <ArrowDownRight size={18} className="text-success" />
+                            ) : (
+                              <ArrowUpRight size={18} className="text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="font-medium text-foreground">
+                            {tx.jobs?.title || (isRTL ? 'دفع للعامل' : 'Worker Payment')}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        {format(new Date(tx.created_at), 'dd MMM yyyy', { locale: isRTL ? ar : enUS })}
+                      </TableCell>
+                      <TableCell className="font-semibold text-foreground whitespace-nowrap">
+                        -{formatCurrency(Number(tx.amount))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </div>
+      </BusinessDesktopShell>
+    );
+  }
 
   return (
     <MobileLayout
@@ -56,7 +159,7 @@ export default function BusinessWallet() {
             <div className="flex-1 bg-primary-foreground/10 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <TrendingDown size={14} className="opacity-75" />
-                <span className="text-xs opacity-75">
+                <span className="text-caption opacity-75">
                   {t('totalPayments')}
                 </span>
               </div>
@@ -67,7 +170,7 @@ export default function BusinessWallet() {
             <div className="flex-1 bg-primary-foreground/10 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Clock size={14} className="opacity-75" />
-                <span className="text-xs opacity-75">
+                <span className="text-caption opacity-75">
                   {t('pendingBalance')}
                 </span>
               </div>

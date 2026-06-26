@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
 
 type Status = 'not_started' | 'pending' | 'pending_review' | 'verified' | 'rejected' | 'applied' | 'accepted' | 'completed' | 'cancelled';

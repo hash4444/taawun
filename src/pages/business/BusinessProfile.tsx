@@ -1,17 +1,19 @@
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { BusinessDesktopShell } from '@/components/layout/BusinessDesktopShell';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { 
-  Building2, 
-  Shield, 
-  CreditCard, 
-  HelpCircle, 
-  Settings, 
+import {
+  Building2,
+  Shield,
+  CreditCard,
+  HelpCircle,
+  Settings,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +25,7 @@ export default function BusinessProfile() {
   const { t, isRTL } = useApp();
   const { profile, businessData, verificationStatus, signOut } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const ArrowIcon = isRTL ? ChevronLeft : ChevronRight;
 
@@ -70,6 +73,61 @@ export default function BusinessProfile() {
     },
   ];
 
+  if (!isMobile) {
+    return (
+      <BusinessDesktopShell>
+        <div className="max-w-3xl space-y-6">
+          <h1 className="text-page-title text-foreground">{t('profile')}</h1>
+
+          <div className="card-elevated p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
+                <Building2 size={32} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-card-title font-semibold text-foreground">
+                  {(businessData?.trade_name as string | undefined) ||
+                    (businessData?.legal_name as string | undefined) ||
+                    (isRTL ? 'منشأتك' : 'Your Business')}
+                </h2>
+                <p className="text-body text-muted-foreground">{profile?.email}</p>
+                <StatusBadge status={verificationStatus} size="sm" className="mt-2" />
+              </div>
+            </div>
+          </div>
+
+          <div className="card-elevated divide-y divide-border">
+            {menuItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors text-start"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+                  <item.icon size={20} className="text-primary" />
+                </div>
+                <span className="flex-1 text-start text-body font-medium text-foreground">
+                  {item.label}
+                </span>
+                {item.badge && <StatusBadge status={item.badge} size="sm" showIcon={false} />}
+                <ArrowIcon size={18} className="text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            className="w-full h-12 text-destructive border-destructive/30 hover:bg-destructive-light max-w-xs"
+          >
+            <LogOut size={18} className="me-2" />
+            {isRTL ? 'تسجيل الخروج' : 'Log Out'}
+          </Button>
+        </div>
+      </BusinessDesktopShell>
+    );
+  }
+
   return (
     <MobileLayout
       header={<PageHeader title={t('profile')} />}
@@ -85,7 +143,7 @@ export default function BusinessProfile() {
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-foreground">
-                {(businessData as any)?.trade_name || (businessData as any)?.legal_name || (isRTL ? 'منشأتك' : 'Your Business')}
+                {(businessData?.trade_name as string | undefined) || (businessData?.legal_name as string | undefined) || (isRTL ? 'منشأتك' : 'Your Business')}
               </h2>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
               <StatusBadge 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,7 +47,8 @@ export function AddBankAccountDialog({ open, onOpenChange }: AddBankAccountDialo
       setAccountHolderName('');
       setIban('');
       setIsDefault(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('Failed to add bank account:', error);
       toast.error(isRTL ? 'فشل إضافة الحساب' : 'Failed to add account');
     }
   };

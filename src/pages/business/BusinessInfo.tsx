@@ -1,6 +1,8 @@
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { BusinessDesktopShell } from '@/components/layout/BusinessDesktopShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +10,7 @@ import { Building2, Camera } from 'lucide-react';
 
 export default function BusinessInfo() {
   const { isRTL } = useApp();
+  const isMobile = useIsMobile();
 
   const fields = [
     {
@@ -36,13 +39,57 @@ export default function BusinessInfo() {
     },
   ];
 
+  if (!isMobile) {
+    return (
+      <BusinessDesktopShell>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <h1 className="text-page-title text-foreground">
+            {isRTL ? 'معلومات المنشأة' : 'Business Information'}
+          </h1>
+
+          <div className="card-elevated p-6 space-y-6">
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-xl bg-primary-light flex items-center justify-center">
+                  <Building2 size={40} className="text-primary" />
+                </div>
+                <button
+                  aria-label={isRTL ? 'تغيير الشعار' : 'Change logo'}
+                  className="absolute bottom-0 end-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md"
+                >
+                  <Camera size={16} />
+                </button>
+              </div>
+              <p className="mt-3 text-body text-muted-foreground">
+                {isRTL ? 'اضغط لتغيير الشعار' : 'Tap to change logo'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {fields.map((field, index) => (
+                <div key={index} className="space-y-2">
+                  <Label className="text-muted-foreground">{field.label}</Label>
+                  <Input value={field.value} readOnly className="bg-muted/50" />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end">
+              <Button>{isRTL ? 'تعديل المعلومات' : 'Edit Information'}</Button>
+            </div>
+          </div>
+        </div>
+      </BusinessDesktopShell>
+    );
+  }
+
   return (
     <MobileLayout
       header={
-        <PageHeader 
-          title={isRTL ? 'معلومات المنشأة' : 'Business Information'} 
-          showBack 
-          backPath="/business/profile" 
+        <PageHeader
+          title={isRTL ? 'معلومات المنشأة' : 'Business Information'}
+          showBack
+          backPath="/business/profile"
         />
       }
       noPadding

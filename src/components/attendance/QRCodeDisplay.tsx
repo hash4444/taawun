@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { generateQRData } from '@/hooks/useAttendance';
 import { QrCode } from 'lucide-react';
 
@@ -31,13 +31,13 @@ export function QRCodeDisplay({ jobId, businessId, action }: QRCodeDisplayProps)
   return (
     <div className="flex flex-col items-center p-6 bg-card rounded-2xl border border-border">
       <div className="mb-4 text-center">
-        <h3 className="font-semibold text-lg text-foreground">
-          {action === 'check_in' 
+        <h3 className="font-semibold text-card-title text-foreground">
+          {action === 'check_in'
             ? (isRTL ? 'رمز تسجيل الحضور' : 'Check-in QR Code')
             : (isRTL ? 'رمز تسجيل الخروج' : 'Check-out QR Code')}
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          {isRTL 
+        <p className="text-body text-muted-foreground mt-1">
+          {isRTL
             ? 'اطلب من العامل مسح هذا الرمز'
             : 'Ask the worker to scan this code'}
         </p>
@@ -55,7 +55,7 @@ export function QRCodeDisplay({ jobId, businessId, action }: QRCodeDisplayProps)
         </div>
       )}
       
-      <p className="text-xs text-muted-foreground mt-4">
+      <p className="text-caption text-muted-foreground mt-4">
         {isRTL ? 'يتم تحديث الرمز تلقائياً' : 'Code refreshes automatically'}
       </p>
     </div>

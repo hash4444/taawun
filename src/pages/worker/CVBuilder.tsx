@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useSaveCV, CVPersonalInfo, CVEducation, CVExperience, CVLanguage } from '@/hooks/useCV';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Plus, Trash2, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
+import { Sparkles, Plus, Trash2, ChevronRight, ChevronLeft, Loader2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,6 +28,7 @@ export default function CVBuilder() {
   const { isRTL } = useApp();
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const saveCV = useSaveCV();
 
   const [step, setStep] = useState(0);
@@ -102,7 +105,7 @@ export default function CVBuilder() {
       {
         onSuccess: (data) => {
           toast({ title: isRTL ? 'تم الحفظ' : 'CV Saved!' });
-          navigate(`/worker/cv/preview/${(data as any).id}`);
+          navigate(`/worker/cv/preview/${(data as { id: string }).id}`);
         },
         onError: () => {
           toast({ title: isRTL ? 'خطأ' : 'Error', variant: 'destructive' });
@@ -111,7 +114,7 @@ export default function CVBuilder() {
     );
   };
 
-  const updateExp = (i: number, field: keyof CVExperience, value: any) => {
+  const updateExp = (i: number, field: keyof CVExperience, value: string | boolean) => {
     setExperience(prev => prev.map((e, idx) => idx === i ? { ...e, [field]: value } : e));
   };
 
@@ -123,30 +126,27 @@ export default function CVBuilder() {
     setLanguages(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
   };
 
-  return (
-    <MobileLayout
-      header={<PageHeader title={isRTL ? 'إنشاء السيرة الذاتية' : 'Build Your CV'} showBack />}
-      noPadding
-    >
-      {/* Progress */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex gap-1 mb-2">
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                'h-1.5 flex-1 rounded-full transition-colors',
-                i <= step ? 'bg-primary' : 'bg-muted'
-              )}
-            />
-          ))}
-        </div>
-        <p className="text-sm font-medium text-foreground">
-          {STEPS[step][isRTL ? 'ar' : 'en']}
-        </p>
+  const progressBar = (
+    <div className="px-4 pt-4 pb-2">
+      <div className="flex gap-1 mb-2">
+        {STEPS.map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              'h-1.5 flex-1 rounded-full transition-colors',
+              i <= step ? 'bg-primary' : 'bg-muted'
+            )}
+          />
+        ))}
       </div>
+      <p className="text-sm font-medium text-foreground">
+        {STEPS[step][isRTL ? 'ar' : 'en']}
+      </p>
+    </div>
+  );
 
-      <div className="flex-1 px-4 py-4 overflow-y-auto pb-32">
+  const stepsContent = (
+    <div className="flex-1 px-4 py-4 overflow-y-auto pb-32">
         {/* Step 0: Personal Info */}
         {step === 0 && (
           <div className="space-y-4">
@@ -337,29 +337,136 @@ export default function CVBuilder() {
             />
           </div>
         )}
+    </div>
+  );
+
+  const stepNavButtons = (
+    <div className="flex gap-3">
+      {step > 0 && (
+        <Button variant="outline" onClick={() => setStep(s => s - 1)} className="flex-1">
+          {isRTL ? <ChevronRight size={16} className="me-1" /> : <ChevronLeft size={16} className="me-1" />}
+          {isRTL ? 'السابق' : 'Back'}
+        </Button>
+      )}
+      {step < STEPS.length - 1 ? (
+        <Button onClick={() => setStep(s => s + 1)} className="flex-1">
+          {isRTL ? 'التالي' : 'Next'}
+          {isRTL ? <ChevronLeft size={16} className="ms-1" /> : <ChevronRight size={16} className="ms-1" />}
+        </Button>
+      ) : (
+        <Button onClick={handleSave} disabled={saveCV.isPending} className="flex-1">
+          {saveCV.isPending ? <Loader2 size={16} className="me-1 animate-spin" /> : null}
+          {isRTL ? 'حفظ وعرض' : 'Save & Preview'}
+        </Button>
+      )}
+    </div>
+  );
+
+  const livePreviewPanel = (
+    <div className="card-elevated p-5 sticky top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
+      <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+        <FileText size={16} />
+        <h2 className="text-card-title font-semibold text-foreground">
+          {isRTL ? 'معاينة مباشرة' : 'Live Preview'}
+        </h2>
       </div>
+      <div className="space-y-3">
+        <div>
+          <p className="font-semibold text-foreground">{personalInfo.fullName || (isRTL ? 'اسمك الكامل' : 'Your Full Name')}</p>
+          <p className="text-caption text-muted-foreground">
+            {[personalInfo.email, personalInfo.phone].filter(Boolean).join(' • ') || (isRTL ? 'بيانات الاتصال' : 'Contact details')}
+          </p>
+          <p className="text-caption text-muted-foreground">
+            {[personalInfo.city, personalInfo.country].filter(Boolean).join(', ')}
+          </p>
+        </div>
+
+        {summary && (
+          <div>
+            <p className="text-caption font-semibold text-foreground uppercase tracking-wide mt-3">
+              {isRTL ? 'الملخص' : 'Summary'}
+            </p>
+            <p className="text-caption text-muted-foreground line-clamp-4">{summary}</p>
+          </div>
+        )}
+
+        {experience.some(e => e.title || e.company) && (
+          <div>
+            <p className="text-caption font-semibold text-foreground uppercase tracking-wide mt-3">
+              {isRTL ? 'الخبرة' : 'Experience'}
+            </p>
+            {experience.filter(e => e.title || e.company).map((exp, i) => (
+              <p key={i} className="text-caption text-muted-foreground">
+                {exp.title}{exp.title && exp.company ? ' — ' : ''}{exp.company}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {education.some(e => e.institution) && (
+          <div>
+            <p className="text-caption font-semibold text-foreground uppercase tracking-wide mt-3">
+              {isRTL ? 'التعليم' : 'Education'}
+            </p>
+            {education.filter(e => e.institution).map((edu, i) => (
+              <p key={i} className="text-caption text-muted-foreground">
+                {edu.degree}{edu.degree && edu.institution ? ' — ' : ''}{edu.institution}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {skills.length > 0 && (
+          <div>
+            <p className="text-caption font-semibold text-foreground uppercase tracking-wide mt-3">
+              {isRTL ? 'المهارات' : 'Skills'}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {skills.map((s, i) => (
+                <span key={i} className="px-2 py-0.5 bg-primary-light text-primary text-caption rounded-full">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (!isMobile) {
+    return (
+      <WorkerDesktopShell>
+        <div className="max-w-5xl space-y-6">
+          <h1 className="text-page-title text-foreground">
+            {isRTL ? 'إنشاء السيرة الذاتية' : 'Build Your CV'}
+          </h1>
+
+          <div className="grid grid-cols-[1fr_360px] gap-6 items-start">
+            <div className="card-elevated overflow-hidden">
+              {progressBar}
+              {stepsContent}
+              <div className="p-4 border-t border-border">
+                {stepNavButtons}
+              </div>
+            </div>
+
+            {livePreviewPanel}
+          </div>
+        </div>
+      </WorkerDesktopShell>
+    );
+  }
+
+  return (
+    <MobileLayout
+      header={<PageHeader title={isRTL ? 'إنشاء السيرة الذاتية' : 'Build Your CV'} showBack />}
+      noPadding
+    >
+      {progressBar}
+      {stepsContent}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border pb-safe">
-        <div className="flex gap-3">
-          {step > 0 && (
-            <Button variant="outline" onClick={() => setStep(s => s - 1)} className="flex-1">
-              {isRTL ? <ChevronRight size={16} className="me-1" /> : <ChevronLeft size={16} className="me-1" />}
-              {isRTL ? 'السابق' : 'Back'}
-            </Button>
-          )}
-          {step < STEPS.length - 1 ? (
-            <Button onClick={() => setStep(s => s + 1)} className="flex-1">
-              {isRTL ? 'التالي' : 'Next'}
-              {isRTL ? <ChevronLeft size={16} className="ms-1" /> : <ChevronRight size={16} className="ms-1" />}
-            </Button>
-          ) : (
-            <Button onClick={handleSave} disabled={saveCV.isPending} className="flex-1">
-              {saveCV.isPending ? <Loader2 size={16} className="me-1 animate-spin" /> : null}
-              {isRTL ? 'حفظ وعرض' : 'Save & Preview'}
-            </Button>
-          )}
-        </div>
+        {stepNavButtons}
       </div>
     </MobileLayout>
   );

@@ -1,5 +1,5 @@
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Button } from '@/components/ui/button';
 import { useOpenDisputes, useUpdateDispute } from '@/hooks/useDisputes';
@@ -34,7 +34,7 @@ export default function AdminDisputesQueue() {
             {disputes.map(dispute => (
               <div key={dispute.id} className="card-elevated p-4">
                 <p className="font-medium mb-1">{dispute.reason}</p>
-                <p className="text-xs text-muted-foreground mb-3">{dispute.status} - {(dispute.profiles as any)?.email}</p>
+                <p className="text-caption text-muted-foreground mb-3">{dispute.status} - {dispute.profiles?.email}</p>
                 <Button size="sm" onClick={() => handleResolve(dispute.id)} disabled={updateMutation.isPending}>{isRTL ? 'حل النزاع' : 'Resolve'}</Button>
               </div>
             ))}

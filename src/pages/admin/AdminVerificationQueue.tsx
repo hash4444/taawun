@@ -1,17 +1,27 @@
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { usePendingVerifications } from '@/hooks/useKYC';
 import { User, Building2, ChevronRight } from 'lucide-react';
+
+interface PendingItem {
+  id: string;
+  type: 'worker' | 'business';
+  profiles?: {
+    full_name?: string | null;
+    email?: string | null;
+  } | null;
+  [key: string]: unknown;
+}
 
 export default function AdminVerificationQueue() {
   const { isRTL } = useApp();
   const navigate = useNavigate();
   const { data, isLoading } = usePendingVerifications();
 
-  const allPending = [
-    ...(data?.workers || []).map(w => ({ ...w, type: 'worker' as const })), 
-    ...(data?.businesses || []).map(b => ({ ...b, type: 'business' as const }))
+  const allPending: PendingItem[] = [
+    ...(data?.workers || []).map(w => ({ ...w, type: 'worker' as const }) as unknown as PendingItem),
+    ...(data?.businesses || []).map(b => ({ ...b, type: 'business' as const }) as unknown as PendingItem)
   ];
 
   return (
@@ -24,7 +34,7 @@ export default function AdminVerificationQueue() {
           <p className="text-center text-muted-foreground py-12">{isRTL ? 'لا توجد طلبات معلقة' : 'No pending requests'}</p>
         ) : (
           <div className="space-y-3">
-            {allPending.map((item: any) => (
+            {allPending.map((item) => (
               <div 
                 key={item.id} 
                 className="card-elevated p-4 cursor-pointer hover:bg-muted/50 transition-colors"
@@ -37,7 +47,7 @@ export default function AdminVerificationQueue() {
                     </div>
                     <div>
                       <p className="font-medium">{item.profiles?.full_name || item.profiles?.email}</p>
-                      <p className="text-xs text-muted-foreground">{item.type === 'worker' ? (isRTL ? 'عامل' : 'Worker') : (isRTL ? 'منشأة' : 'Business')}</p>
+                      <p className="text-caption text-muted-foreground">{item.type === 'worker' ? (isRTL ? 'عامل' : 'Worker') : (isRTL ? 'منشأة' : 'Business')}</p>
                     </div>
                   </div>
                   <ChevronRight size={20} className="text-muted-foreground" />

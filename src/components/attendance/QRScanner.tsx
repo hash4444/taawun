@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useApp } from '@/hooks/useApp';
 import { Button } from '@/components/ui/button';
 import { Camera, X, QrCode } from 'lucide-react';
 import { parseQRData } from '@/hooks/useAttendance';
@@ -16,12 +16,7 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    startCamera();
-    return () => stopCamera();
-  }, []);
-
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' }
@@ -33,13 +28,18 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
     } catch (err) {
       setError(isRTL ? 'لا يمكن الوصول للكاميرا' : 'Cannot access camera');
     }
-  };
+  }, [isRTL]);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    startCamera();
+    return () => stopCamera();
+  }, [startCamera, stopCamera]);
 
   const handleManualSubmit = () => {
     if (!manualCode.trim()) return;

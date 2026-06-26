@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface CVPersonalInfo {
   fullName?: string;
@@ -81,11 +82,11 @@ export function useSaveCV() {
           .from('cv_records')
           .update({
             title: cv.title,
-            personal_info: cv.personal_info as any,
-            education: cv.education as any,
-            experience: cv.experience as any,
+            personal_info: cv.personal_info as unknown as Json,
+            education: cv.education as unknown as Json,
+            experience: cv.experience as unknown as Json,
             skills: cv.skills,
-            languages: cv.languages as any,
+            languages: cv.languages as unknown as Json,
             summary: cv.summary,
             is_ai_generated: cv.is_ai_generated,
           })
@@ -100,11 +101,11 @@ export function useSaveCV() {
           .insert({
             user_id: user.id,
             title: cv.title,
-            personal_info: cv.personal_info as any,
-            education: cv.education as any,
-            experience: cv.experience as any,
+            personal_info: cv.personal_info as unknown as Json,
+            education: cv.education as unknown as Json,
+            experience: cv.experience as unknown as Json,
             skills: cv.skills,
-            languages: cv.languages as any,
+            languages: cv.languages as unknown as Json,
             summary: cv.summary,
             is_ai_generated: cv.is_ai_generated,
           })

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 type Application = Database['public']['Tables']['applications']['Row'];
 type ApplicationStatus = Database['public']['Enums']['application_status'];
@@ -20,6 +20,27 @@ export interface ApplicationWithWorker extends Application {
   workers?: (Worker & {
     profiles?: Profile | null;
   }) | null;
+}
+
+// Count total applications across all jobs posted by the current business
+export function useBusinessApplicationsCount() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['applications', 'business-count', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+
+      const { count, error } = await supabase
+        .from('applications')
+        .select('id, jobs!inner(poster_id)', { count: 'exact', head: true })
+        .eq('jobs.poster_id', user.id);
+
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user,
+  });
 }
 
 // Fetch worker's applications

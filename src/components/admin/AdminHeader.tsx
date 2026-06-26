@@ -1,5 +1,5 @@
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';

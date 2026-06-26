@@ -368,6 +368,170 @@ export type Database = {
         }
         Relationships: []
       }
+      candidate_hunter_logs: {
+        Row: {
+          action: string
+          business_id: string
+          created_at: string
+          id: string
+          job_id: string | null
+          metadata: Json | null
+          reason: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          action: string
+          business_id: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          action?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          worker_id?: string | null
+        }
+        Relationships: []
+      }
+      candidate_hunter_settings: {
+        Row: {
+          business_id: string
+          created_at: string
+          daily_outreach_limit: number
+          excluded_keywords: string[]
+          id: string
+          last_run_at: string | null
+          locations: string[]
+          minimum_match_score: number
+          mode: string
+          target_roles: string[]
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          daily_outreach_limit?: number
+          excluded_keywords?: string[]
+          id?: string
+          last_run_at?: string | null
+          locations?: string[]
+          minimum_match_score?: number
+          mode?: string
+          target_roles?: string[]
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          daily_outreach_limit?: number
+          excluded_keywords?: string[]
+          id?: string
+          last_run_at?: string | null
+          locations?: string[]
+          minimum_match_score?: number
+          mode?: string
+          target_roles?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      candidate_matches: {
+        Row: {
+          business_id: string
+          created_at: string
+          explanation: string | null
+          gaps: string[]
+          id: string
+          job_id: string
+          score: number
+          status: Database["public"]["Enums"]["candidate_match_status"]
+          strengths: string[]
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          explanation?: string | null
+          gaps?: string[]
+          id?: string
+          job_id: string
+          score: number
+          status?: Database["public"]["Enums"]["candidate_match_status"]
+          strengths?: string[]
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          explanation?: string | null
+          gaps?: string[]
+          id?: string
+          job_id?: string
+          score?: number
+          status?: Database["public"]["Enums"]["candidate_match_status"]
+          strengths?: string[]
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: []
+      }
+      candidate_outreach_drafts: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          job_id: string
+          match_id: string | null
+          notes: string | null
+          outreach_message: string
+          sent: boolean
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          job_id: string
+          match_id?: string | null
+          notes?: string | null
+          outreach_message: string
+          sent?: boolean
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          match_id?: string | null
+          notes?: string | null
+          outreach_message?: string
+          sent?: boolean
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_outreach_drafts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_sessions: {
         Row: {
           created_at: string
@@ -920,6 +1084,13 @@ export type Database = {
         | "cancelled"
         | "completed"
       attendance_method: "qr" | "gps" | "manual"
+      candidate_match_status:
+        | "matched"
+        | "drafted"
+        | "outreached"
+        | "needs_review"
+        | "skipped"
+        | "rejected"
       dispute_status: "open" | "review" | "resolved" | "rejected"
       doc_status: "submitted" | "approved" | "rejected"
       doc_type:
@@ -1093,6 +1264,14 @@ export const Constants = {
         "completed",
       ],
       attendance_method: ["qr", "gps", "manual"],
+      candidate_match_status: [
+        "matched",
+        "drafted",
+        "outreached",
+        "needs_review",
+        "skipped",
+        "rejected",
+      ],
       dispute_status: ["open", "review", "resolved", "rejected"],
       doc_status: ["submitted", "approved", "rejected"],
       doc_type: [

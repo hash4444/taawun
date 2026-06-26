@@ -1,8 +1,10 @@
 import { useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
 import { Button } from '@/components/ui/button';
 import { useCVRecords, CVRecord } from '@/hooks/useCV';
 import { Download, Mail, Phone, MapPin, Linkedin, Loader2 } from 'lucide-react';
@@ -13,6 +15,7 @@ export default function CVPreview() {
   const { id } = useParams<{ id: string }>();
   const { isRTL } = useApp();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const cvRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -49,6 +52,16 @@ export default function CVPreview() {
 
   // If CV has an uploaded file, show the file directly
   if (!cv) {
+    if (!isMobile) {
+      return (
+        <WorkerDesktopShell>
+          <div className="max-w-3xl mx-auto text-center py-16">
+            <h1 className="text-page-title text-foreground mb-2">CV</h1>
+            <p className="text-muted-foreground">{isRTL ? 'السيرة غير موجودة' : 'CV not found'}</p>
+          </div>
+        </WorkerDesktopShell>
+      );
+    }
     return (
       <MobileLayout header={<PageHeader title="CV" showBack />}>
         <div className="text-center py-16">
@@ -59,20 +72,44 @@ export default function CVPreview() {
   }
 
   if (cv.file_url) {
+    const downloadButton = (
+      <Button size="sm" asChild>
+        <a href={cv.file_url} target="_blank" rel="noopener noreferrer" download>
+          <Download size={14} className="me-1" />
+          {isRTL ? 'تحميل' : 'Download'}
+        </a>
+      </Button>
+    );
+
+    if (!isMobile) {
+      return (
+        <WorkerDesktopShell>
+          <div className="max-w-3xl mx-auto space-y-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-page-title text-foreground">
+                {isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
+              </h1>
+              {downloadButton}
+            </div>
+            <div className="card-elevated overflow-hidden">
+              <iframe
+                src={cv.file_url}
+                className="w-full h-[calc(100vh-14rem)] border-0"
+                title={cv.title}
+              />
+            </div>
+          </div>
+        </WorkerDesktopShell>
+      );
+    }
+
     return (
       <MobileLayout
         header={
           <PageHeader
             title={isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
             showBack
-            action={
-              <Button size="sm" asChild>
-                <a href={cv.file_url} target="_blank" rel="noopener noreferrer" download>
-                  <Download size={14} className="me-1" />
-                  {isRTL ? 'تحميل' : 'Download'}
-                </a>
-              </Button>
-            }
+            action={downloadButton}
           />
         }
         noPadding
@@ -90,24 +127,14 @@ export default function CVPreview() {
 
   const p = cv.personal_info || {};
 
-  return (
-    <MobileLayout
-      header={
-        <PageHeader
-          title={isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
-          showBack
-          action={
-            <Button size="sm" onClick={handleDownload} disabled={downloading}>
-              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} className="me-1" />}
-              PDF
-            </Button>
-          }
-        />
-      }
-      noPadding
-    >
-      <div className="p-4 overflow-y-auto pb-8">
-        {/* CV Content */}
+  const downloadButton = (
+    <Button size="sm" onClick={handleDownload} disabled={downloading}>
+      {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} className="me-1" />}
+      PDF
+    </Button>
+  );
+
+  const cvDocument = (
         <div ref={cvRef} className="bg-white p-8 rounded-xl shadow-sm max-w-[210mm] mx-auto" style={{ fontFamily: 'Inter, sans-serif', color: '#1a1a2e' }}>
           {/* Header */}
           <div style={{ borderBottom: '3px solid hsl(168, 84%, 32%)', paddingBottom: '16px', marginBottom: '20px' }}>
@@ -219,6 +246,37 @@ export default function CVPreview() {
             </div>
           )}
         </div>
+  );
+
+  if (!isMobile) {
+    return (
+      <WorkerDesktopShell>
+        <div className="max-w-3xl mx-auto space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-page-title text-foreground">
+              {isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
+            </h1>
+            {downloadButton}
+          </div>
+          {cvDocument}
+        </div>
+      </WorkerDesktopShell>
+    );
+  }
+
+  return (
+    <MobileLayout
+      header={
+        <PageHeader
+          title={isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
+          showBack
+          action={downloadButton}
+        />
+      }
+      noPadding
+    >
+      <div className="p-4 overflow-y-auto pb-8">
+        {cvDocument}
       </div>
     </MobileLayout>
   );

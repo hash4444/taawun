@@ -1,15 +1,26 @@
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { BusinessDesktopShell } from '@/components/layout/BusinessDesktopShell';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { User, Star, Clock, CheckCircle2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function BusinessWorkers() {
   const { t, isRTL } = useApp();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   // Fetch workers who have worked with this business
   const { data: workerData, isLoading } = useQuery({
@@ -68,7 +79,7 @@ export default function BusinessWorkers() {
       applications.forEach(app => {
         const existing = workerStats.get(app.worker_id);
         const profile = profileMap.get(app.worker_id);
-        const workerInfo = app.workers as any;
+        const workerInfo = app.workers;
 
         if (existing) {
           if (app.status === 'completed') {
@@ -115,7 +126,7 @@ export default function BusinessWorkers() {
               <span className="text-sm font-medium">{worker.rating.toFixed(1)}</span>
             </div>
           )}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+          <div className="flex items-center gap-1 text-caption text-muted-foreground mt-1">
             <CheckCircle2 size={12} />
             <span>{worker.jobsCompleted} {isRTL ? 'وظائف' : 'jobs'}</span>
           </div>
@@ -124,13 +135,124 @@ export default function BusinessWorkers() {
     </div>
   );
 
+  const renderWorkerTable = (list: { id: string; name: string; rating: number; jobsCompleted: number }[], emptyLabel: string) => {
+    if (isLoading) {
+      return (
+        <div className="space-y-3 p-5">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+          ))}
+        </div>
+      );
+    }
+    if (list.length === 0) {
+      return <div className="text-center py-16 text-muted-foreground">{emptyLabel}</div>;
+    }
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{isRTL ? 'العامل' : 'Worker'}</TableHead>
+            <TableHead>{isRTL ? 'التقييم' : 'Rating'}</TableHead>
+            <TableHead>{isRTL ? 'الوظائف المكتملة' : 'Jobs Completed'}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {list.map((worker) => (
+            <TableRow key={worker.id}>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
+                    <User size={18} className="text-primary" />
+                  </div>
+                  <span className="font-medium text-foreground">{worker.name}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                {worker.rating > 0 ? (
+                  <span className="flex items-center gap-1 text-foreground">
+                    <Star size={14} className="fill-amber-400 text-amber-400" />
+                    {worker.rating.toFixed(1)}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 size={14} />
+                  {worker.jobsCompleted}
+                </span>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
+
+  if (!isMobile) {
+    return (
+      <BusinessDesktopShell>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-page-title text-foreground">{t('workerManagement')}</h1>
+            <p className="text-body text-muted-foreground mt-1">
+              {isRTL ? 'العمال الذين عملوا معك' : 'Workers who have worked with you'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="card-elevated p-5 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Clock size={22} className="text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground leading-none">{workers.active.length}</p>
+                <p className="text-caption text-muted-foreground mt-1">{t('activeWorkers')}</p>
+              </div>
+            </div>
+            <div className="card-elevated p-5 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 size={22} className="text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground leading-none">
+                  {workers.active.length + workers.past.length}
+                </p>
+                <p className="text-caption text-muted-foreground mt-1">{t('totalWorkers')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-elevated overflow-hidden">
+            <Tabs defaultValue="active" className="w-full">
+              <div className="px-5 py-4 border-b border-border">
+                <TabsList>
+                  <TabsTrigger value="active">{isRTL ? 'نشطين' : 'Active'}</TabsTrigger>
+                  <TabsTrigger value="past">{isRTL ? 'سابقين' : 'Past'}</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="active" className="mt-0">
+                {renderWorkerTable(workers.active, t('noActiveWorkers'))}
+              </TabsContent>
+              <TabsContent value="past" className="mt-0">
+                {renderWorkerTable(workers.past, t('noPastWorkers'))}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </BusinessDesktopShell>
+    );
+  }
+
   return (
     <MobileLayout
       header={
-        <PageHeader 
-          title={t('workerManagement')} 
-          showBack 
-          backPath="/business/profile" 
+        <PageHeader
+          title={t('workerManagement')}
+          showBack
+          backPath="/business/profile"
         />
       }
       noPadding
@@ -141,7 +263,7 @@ export default function BusinessWorkers() {
           <div className="card-elevated p-4 text-center">
             <Clock size={20} className="mx-auto mb-2 text-primary" />
             <p className="text-2xl font-bold text-foreground">{workers.active.length}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {t('activeWorkers')}
             </p>
           </div>
@@ -150,7 +272,7 @@ export default function BusinessWorkers() {
             <p className="text-2xl font-bold text-foreground">
               {workers.active.length + workers.past.length}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {t('totalWorkers')}
             </p>
           </div>

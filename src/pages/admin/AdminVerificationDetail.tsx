@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -158,13 +158,13 @@ export default function AdminVerificationDetail() {
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold text-lg">
+                  <p className="font-semibold text-card-title">
                     {profileData.profile.full_name || profileData.profile.email}
                   </p>
-                  <p className="text-sm text-muted-foreground">{profileData.profile.email}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {profileData.type === 'worker' 
-                      ? (isRTL ? 'عامل' : 'Worker') 
+                  <p className="text-body text-muted-foreground">{profileData.profile.email}</p>
+                  <p className="text-caption text-muted-foreground">
+                    {profileData.type === 'worker'
+                      ? (isRTL ? 'عامل' : 'Worker')
                       : (isRTL ? 'منشأة' : 'Business')}
                   </p>
                 </div>
@@ -192,7 +192,7 @@ export default function AdminVerificationDetail() {
                             <p className="font-medium">
                               {DOC_TYPE_LABELS[doc.doc_type]?.[isRTL ? 'ar' : 'en'] || doc.doc_type}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-caption text-muted-foreground">
                               {new Date(doc.created_at).toLocaleDateString()}
                             </p>
                           </div>

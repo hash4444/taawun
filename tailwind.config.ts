@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
@@ -149,7 +150,14 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
       },
+      fontSize: {
+        "page-title": ["22px", { lineHeight: "1.25", fontWeight: "600" }],
+        "card-title": ["15px", { lineHeight: "1.4" }],
+        body: ["13px", { lineHeight: "1.5" }],
+        caption: ["11px", { lineHeight: "1.4" }],
+        micro: ["10px", { lineHeight: "1.3" }],
+      },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

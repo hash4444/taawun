@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 type WalletLedger = Database['public']['Tables']['wallet_ledger']['Row'];
 type Job = Database['public']['Tables']['jobs']['Row'];

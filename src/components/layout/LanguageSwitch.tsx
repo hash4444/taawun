@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { SUPPORTED_LANGUAGES, Language } from '@/lib/i18n';
 import { Globe, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';

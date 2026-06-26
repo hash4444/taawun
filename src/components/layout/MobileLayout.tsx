@@ -30,7 +30,7 @@ export function MobileLayout({ children, className, header, footer, noPadding }:
       </main>
       
       {footer && (
-        <footer className="fixed bottom-0 left-0 right-0 z-40 glass border-t border-border pb-safe">
+        <footer className="sticky bottom-0 z-40 glass border-t border-border pb-safe mt-auto">
           {footer}
         </footer>
       )}

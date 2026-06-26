@@ -1,7 +1,9 @@
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
 import { JobCard } from '@/components/jobs/JobCard';
 import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -18,6 +20,7 @@ const FREELANCE_FILTERS = [
 
 export default function FreelanceMarketplace() {
   const { isRTL } = useApp();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -38,6 +41,107 @@ export default function FreelanceMarketplace() {
     (job.businesses?.trade_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const searchInput = (
+    <div className="relative flex-1">
+      <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+      <Input
+        type="search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder={isRTL ? 'ابحث عن خدمات ومشاريع...' : 'Search services & gigs...'}
+        className="ps-10 h-11 bg-card"
+      />
+    </div>
+  );
+
+  const resultsCount = (
+    <p className="text-sm text-muted-foreground">
+      {isLoading
+        ? (isRTL ? 'جاري التحميل...' : 'Loading...')
+        : (isRTL ? `${filteredJobs.length} نتيجة` : `${filteredJobs.length} results`)}
+    </p>
+  );
+
+  const emptyResults = (
+    <div className="text-center py-16">
+      <p className="text-muted-foreground">
+        {isRTL ? 'لا توجد خدمات أو مشاريع متاحة' : 'No gigs or services available'}
+      </p>
+    </div>
+  );
+
+  if (!isMobile) {
+    return (
+      <WorkerDesktopShell>
+        <div className="space-y-6 max-w-6xl">
+          <h1 className="text-page-title text-foreground">{isRTL ? 'سوق العمل الحر' : 'Freelance Marketplace'}</h1>
+
+          <div className="grid grid-cols-[260px_1fr] gap-6 items-start">
+            {/* Filter sidebar */}
+            <div className="card-elevated p-5 space-y-4 sticky top-6">
+              <div>
+                <label htmlFor="freelance-search" className="text-caption font-medium text-muted-foreground uppercase tracking-wide mb-2 block">
+                  {isRTL ? 'بحث' : 'Search'}
+                </label>
+                <div className="relative">
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input
+                    id="freelance-search"
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={isRTL ? 'ابحث عن خدمات ومشاريع...' : 'Search services & gigs...'}
+                    className="ps-9 h-10 bg-background"
+                  />
+                </div>
+              </div>
+              <div className="pt-2 border-t border-border space-y-1.5">
+                <p className="text-caption font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  {isRTL ? 'النوع' : 'Type'}
+                </p>
+                {FREELANCE_FILTERS.map(({ key, en, ar }) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveFilter(key)}
+                    className={cn(
+                      'w-full text-start px-3 py-2 rounded-lg text-body transition-all',
+                      activeFilter === key
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    )}
+                  >
+                    {isRTL ? ar : en}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="space-y-4">
+              {resultsCount}
+
+              {isLoading ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-40 bg-muted rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : filteredJobs.length === 0 ? (
+                emptyResults
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {filteredJobs.map((job) => (
+                    <JobCard key={job.id} job={job} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </WorkerDesktopShell>
+    );
+  }
+
   return (
     <MobileLayout
       header={<PageHeader title={isRTL ? 'سوق العمل الحر' : 'Freelance Marketplace'} showBack />}
@@ -46,16 +150,7 @@ export default function FreelanceMarketplace() {
     >
       {/* Search */}
       <div className="px-4 py-3 flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-          <Input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isRTL ? 'ابحث عن خدمات ومشاريع...' : 'Search services & gigs...'}
-            className="ps-10 h-11 bg-card"
-          />
-        </div>
+        {searchInput}
         <button className="w-11 h-11 rounded-lg bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors">
           <SlidersHorizontal size={18} className="text-muted-foreground" />
         </button>
@@ -86,11 +181,7 @@ export default function FreelanceMarketplace() {
 
       {/* Results */}
       <div className="px-4 py-2 pb-4">
-        <p className="text-sm text-muted-foreground mb-3">
-          {isLoading
-            ? (isRTL ? 'جاري التحميل...' : 'Loading...')
-            : (isRTL ? `${filteredJobs.length} نتيجة` : `${filteredJobs.length} results`)}
-        </p>
+        <div className="mb-3">{resultsCount}</div>
 
         {isLoading ? (
           <div className="space-y-3">
@@ -99,11 +190,7 @@ export default function FreelanceMarketplace() {
             ))}
           </div>
         ) : filteredJobs.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground">
-              {isRTL ? 'لا توجد خدمات أو مشاريع متاحة' : 'No gigs or services available'}
-            </p>
-          </div>
+          emptyResults
         ) : (
           <div className="space-y-3">
             {filteredJobs.map((job) => (

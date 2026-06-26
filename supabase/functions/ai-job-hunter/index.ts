@@ -13,8 +13,58 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-async function callAI(messages: any[], tools?: any[], tool_choice?: any) {
-  const body: any = {
+interface ChatMessage {
+  role: string;
+  content: string;
+}
+
+interface ToolDefinition {
+  type: string;
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
+}
+
+interface ToolChoice {
+  type: string;
+  function: { name: string };
+}
+
+interface JobRow {
+  id: string;
+  title?: string;
+  description?: string | null;
+  location?: string | null;
+  job_type?: string | null;
+  employment_type?: string | null;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  skills_required?: string[] | null;
+  experience_years?: number | null;
+  remote_allowed?: boolean | null;
+  sector?: string | null;
+  company_name?: string | null;
+  [key: string]: unknown;
+}
+
+interface ProfileContext {
+  profile: Record<string, unknown> | null;
+  cv: Record<string, unknown> | null;
+  prefs: Record<string, unknown> | null;
+  settings: Record<string, unknown> | null;
+}
+
+interface ScoreResult {
+  score: number;
+  explanation: string;
+  strengths?: string[];
+  gaps?: string[];
+}
+
+async function callAI(messages: ChatMessage[], tools?: ToolDefinition[], tool_choice?: ToolChoice) {
+  const body: Record<string, unknown> = {
     model: "google/gemini-2.5-flash",
     messages,
   };
@@ -44,8 +94,8 @@ async function getProfileContext(userId: string) {
   return { profile, cv, prefs, settings };
 }
 
-async function scoreJob(ctx: any, job: any) {
-  const cv = ctx.cv ?? {};
+async function scoreJob(ctx: ProfileContext, job: JobRow): Promise<ScoreResult> {
+  const cv = (ctx.cv ?? {}) as Record<string, unknown>;
   const prefs = ctx.prefs ?? {};
   const messages = [
     {
@@ -100,11 +150,11 @@ async function scoreJob(ctx: any, job: any) {
   const res = await callAI(messages, [tool], { type: "function", function: { name: "score_job" } });
   const call = res.choices?.[0]?.message?.tool_calls?.[0];
   if (!call) throw new Error("No tool call");
-  return JSON.parse(call.function.arguments);
+  return JSON.parse(call.function.arguments) as ScoreResult;
 }
 
-async function draftCoverLetter(ctx: any, job: any, score: any) {
-  const cv = ctx.cv ?? {};
+async function draftCoverLetter(ctx: ProfileContext, job: JobRow, score: ScoreResult) {
+  const cv = (ctx.cv ?? {}) as Record<string, unknown>;
   const messages = [
     {
       role: "system",
@@ -114,7 +164,12 @@ async function draftCoverLetter(ctx: any, job: any, score: any) {
     {
       role: "user",
       content: JSON.stringify({
-        candidate: { summary: cv.summary, skills: cv.skills, experience: cv.experience, name: cv.personal_info?.fullName },
+        candidate: {
+          summary: cv.summary,
+          skills: cv.skills,
+          experience: cv.experience,
+          name: (cv.personal_info as { fullName?: string } | undefined)?.fullName,
+        },
         job: { title: job.title, description: job.description, company: job.company_name },
         match: score,
       }),
@@ -124,7 +179,7 @@ async function draftCoverLetter(ctx: any, job: any, score: any) {
   return res.choices?.[0]?.message?.content ?? "";
 }
 
-async function log(userId: string, action: string, reason: string, jobId?: string, metadata?: any) {
+async function log(userId: string, action: string, reason: string, jobId?: string, metadata?: Record<string, unknown>) {
   await admin.from("ai_agent_logs").insert({ user_id: userId, action, reason, job_id: jobId ?? null, metadata: metadata ?? {} });
 }
 
@@ -155,7 +210,7 @@ async function runForUser(userId: string, opts: { limit?: number } = {}) {
     .from("ai_job_matches")
     .select("job_id")
     .eq("user_id", userId);
-  const seen = new Set(existing.map((m: any) => m.job_id));
+  const seen = new Set(existing.map((m: { job_id: string }) => m.job_id));
 
   // Today's auto-applied count
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -289,7 +344,7 @@ serve(async (req) => {
         .from("ai_agent_settings")
         .select("user_id")
         .eq("auto_apply_enabled", true);
-      const results: any[] = [];
+      const results: Record<string, unknown>[] = [];
       for (const s of settings) {
         try {
           results.push({ user_id: s.user_id, ...(await runForUser(s.user_id, { limit: 15 })) });

@@ -13,34 +13,6 @@ export function useLocation() {
   const [selectedCityIndex, setSelectedCityIndex] = useState(0);
   const [detecting, setDetecting] = useState(false);
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed: StoredLocation = JSON.parse(saved);
-        const country = MEA_COUNTRIES.find((c) => c.code === parsed.countryCode);
-        if (country) {
-          setSelectedCountry(country);
-          setSelectedCityIndex(Math.min(parsed.cityIndex, country.cities.length - 1));
-        }
-      } catch {
-        // ignore
-      }
-    } else {
-      // Auto-detect on first visit
-      autoDetect();
-    }
-  }, []);
-
-  // Persist whenever selection changes
-  useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ countryCode: selectedCountry.code, cityIndex: selectedCityIndex })
-    );
-  }, [selectedCountry, selectedCityIndex]);
-
   const autoDetect = useCallback(async () => {
     setDetecting(true);
     try {
@@ -65,6 +37,34 @@ export function useLocation() {
       setDetecting(false);
     }
   }, []);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed: StoredLocation = JSON.parse(saved);
+        const country = MEA_COUNTRIES.find((c) => c.code === parsed.countryCode);
+        if (country) {
+          setSelectedCountry(country);
+          setSelectedCityIndex(Math.min(parsed.cityIndex, country.cities.length - 1));
+        }
+      } catch {
+        // ignore
+      }
+    } else {
+      // Auto-detect on first visit
+      autoDetect();
+    }
+  }, [autoDetect]);
+
+  // Persist whenever selection changes
+  useEffect(() => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ countryCode: selectedCountry.code, cityIndex: selectedCityIndex })
+    );
+  }, [selectedCountry, selectedCityIndex]);
 
   const setCountry = useCallback((code: string) => {
     const country = MEA_COUNTRIES.find((c) => c.code === code);

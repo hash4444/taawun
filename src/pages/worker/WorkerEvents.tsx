@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { CalendarDays, MapPin, Building2, Bookmark, BookmarkCheck, UserPlus, Sparkles, Monitor } from 'lucide-react';
@@ -123,6 +125,7 @@ const TABS: { key: TabKey; en: string; ar: string }[] = [
 
 export default function WorkerEvents() {
   const { isRTL } = useApp();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [savedEvents, setSavedEvents] = useState<Set<string>>(new Set());
   const [attendingEvents, setAttendingEvents] = useState<Set<string>>(new Set());
@@ -130,7 +133,11 @@ export default function WorkerEvents() {
   const toggleSave = (id: string) => {
     setSavedEvents(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -138,7 +145,11 @@ export default function WorkerEvents() {
   const toggleAttend = (id: string) => {
     setAttendingEvents(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -160,6 +171,136 @@ export default function WorkerEvents() {
     });
   };
 
+  const tabsRow = (
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+      {TABS.map(tab => (
+        <button
+          key={tab.key}
+          onClick={() => setActiveTab(tab.key)}
+          className={cn(
+            'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
+            activeTab === tab.key
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:text-foreground'
+          )}
+        >
+          {isRTL ? tab.ar : tab.en}
+        </button>
+      ))}
+    </div>
+  );
+
+  const emptyState = (
+    <div className="text-center py-12">
+      <p className="text-sm text-muted-foreground">
+        {isRTL ? 'لا توجد فعاليات' : 'No events found'}
+      </p>
+    </div>
+  );
+
+  const renderEventCard = (event: EventItem) => {
+    const isSaved = savedEvents.has(event.id);
+    const isAttending = attendingEvents.has(event.id);
+
+    return (
+      <div
+        key={event.id}
+        className="rounded-xl border border-border bg-card p-4 transition-all hover:shadow-sm"
+      >
+        {/* Title & Save */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="text-card-title font-semibold text-foreground leading-snug">
+            {isRTL ? event.titleAr : event.title}
+          </h3>
+          <button
+            onClick={() => toggleSave(event.id)}
+            className="flex-shrink-0 p-1 -m-1 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={isSaved ? (isRTL ? 'إلغاء الحفظ' : 'Unsave event') : (isRTL ? 'حفظ' : 'Save event')}
+          >
+            {isSaved ? <BookmarkCheck size={16} className="text-primary" /> : <Bookmark size={16} />}
+          </button>
+        </div>
+
+        {/* Meta */}
+        <div className="space-y-1 mb-3">
+          <div className="flex items-center gap-1.5 text-caption text-muted-foreground">
+            <CalendarDays size={12} />
+            <span>{formatDate(event.date)}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-caption text-muted-foreground">
+            {event.isVirtual ? <Monitor size={12} /> : <MapPin size={12} />}
+            <span>{isRTL ? event.locationAr : event.location}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-caption text-muted-foreground">
+            <Building2 size={12} />
+            <span>{isRTL ? event.organizerAr : event.organizer}</span>
+          </div>
+        </div>
+
+        {/* Categories */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {event.categories.map(cat => (
+            <span
+              key={cat}
+              className={cn(
+                'px-2 py-0.5 rounded-full text-micro font-medium',
+                CATEGORY_STYLES[cat]
+              )}
+            >
+              {isRTL ? CATEGORY_LABELS[cat].ar : CATEGORY_LABELS[cat].en}
+            </span>
+          ))}
+        </div>
+
+        {/* AI Insight */}
+        {event.aiInsight && (
+          <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg bg-accent/50">
+            <Sparkles size={12} className="text-primary flex-shrink-0" />
+            <span className="text-caption text-accent-foreground">
+              {isRTL ? event.aiInsightAr : event.aiInsight}
+            </span>
+          </div>
+        )}
+
+        {/* Attend Button */}
+        <button
+          onClick={() => toggleAttend(event.id)}
+          className={cn(
+            'w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all',
+            isAttending
+              ? 'bg-primary/10 text-primary border border-primary/20'
+              : 'bg-primary text-primary-foreground hover:bg-primary/90'
+          )}
+        >
+          <UserPlus size={14} />
+          {isAttending
+            ? (isRTL ? 'مسجّل' : 'Attending')
+            : (isRTL ? 'سجّل حضورك' : 'Attend')}
+        </button>
+      </div>
+    );
+  };
+
+  if (!isMobile) {
+    return (
+      <WorkerDesktopShell>
+        <div className="space-y-6 max-w-6xl">
+          <h1 className="text-page-title text-foreground">{isRTL ? 'الفعاليات' : 'Events'}</h1>
+
+          {tabsRow}
+
+          {filteredEvents.length === 0 ? (
+            emptyState
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              {filteredEvents.map(renderEventCard)}
+            </div>
+          )}
+        </div>
+      </WorkerDesktopShell>
+    );
+  }
+
   return (
     <MobileLayout
       footer={<BottomNav />}
@@ -168,115 +309,12 @@ export default function WorkerEvents() {
       <PageHeader title={isRTL ? 'الفعاليات' : 'Events'} />
       {/* Tabs - scrollable */}
       <div className="px-4 pt-2 pb-3">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
-                activeTab === tab.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {isRTL ? tab.ar : tab.en}
-            </button>
-          ))}
-        </div>
+        {tabsRow}
       </div>
 
       {/* Events List */}
       <div className="px-4 pb-4 space-y-3">
-        {filteredEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-muted-foreground">
-              {isRTL ? 'لا توجد فعاليات' : 'No events found'}
-            </p>
-          </div>
-        ) : (
-          filteredEvents.map(event => {
-            const isSaved = savedEvents.has(event.id);
-            const isAttending = attendingEvents.has(event.id);
-
-            return (
-              <div
-                key={event.id}
-                className="rounded-xl border border-border bg-card p-4 transition-all hover:shadow-sm"
-              >
-                {/* Title & Save */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="text-sm font-semibold text-foreground leading-snug">
-                    {isRTL ? event.titleAr : event.title}
-                  </h3>
-                  <button
-                    onClick={() => toggleSave(event.id)}
-                    className="flex-shrink-0 p-1 -m-1 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {isSaved ? <BookmarkCheck size={16} className="text-primary" /> : <Bookmark size={16} />}
-                  </button>
-                </div>
-
-                {/* Meta */}
-                <div className="space-y-1 mb-3">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <CalendarDays size={12} />
-                    <span>{formatDate(event.date)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    {event.isVirtual ? <Monitor size={12} /> : <MapPin size={12} />}
-                    <span>{isRTL ? event.locationAr : event.location}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Building2 size={12} />
-                    <span>{isRTL ? event.organizerAr : event.organizer}</span>
-                  </div>
-                </div>
-
-                {/* Categories */}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {event.categories.map(cat => (
-                    <span
-                      key={cat}
-                      className={cn(
-                        'px-2 py-0.5 rounded-full text-[10px] font-medium',
-                        CATEGORY_STYLES[cat]
-                      )}
-                    >
-                      {isRTL ? CATEGORY_LABELS[cat].ar : CATEGORY_LABELS[cat].en}
-                    </span>
-                  ))}
-                </div>
-
-                {/* AI Insight */}
-                {event.aiInsight && (
-                  <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg bg-accent/50">
-                    <Sparkles size={12} className="text-primary flex-shrink-0" />
-                    <span className="text-[11px] text-accent-foreground">
-                      {isRTL ? event.aiInsightAr : event.aiInsight}
-                    </span>
-                  </div>
-                )}
-
-                {/* Attend Button */}
-                <button
-                  onClick={() => toggleAttend(event.id)}
-                  className={cn(
-                    'w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all',
-                    isAttending
-                      ? 'bg-primary/10 text-primary border border-primary/20'
-                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                  )}
-                >
-                  <UserPlus size={14} />
-                  {isAttending
-                    ? (isRTL ? 'مسجّل' : 'Attending')
-                    : (isRTL ? 'سجّل حضورك' : 'Attend')}
-                </button>
-              </div>
-            );
-          })
-        )}
+        {filteredEvents.length === 0 ? emptyState : filteredEvents.map(renderEventCard)}
       </div>
     </MobileLayout>
   );

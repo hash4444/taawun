@@ -1,16 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Language, getTranslation, TranslationKey } from '@/lib/i18n';
-
-interface AppContextType {
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  t: (key: TranslationKey) => string;
-  isRTL: boolean;
-  theme: 'light' | 'dark';
-  setTheme: (theme: 'light' | 'dark') => void;
-}
-
-const AppContext = createContext<AppContextType | undefined>(undefined);
+import React, { useState, useEffect, ReactNode } from 'react';
+import { Language, getTranslation } from '@/lib/i18n';
+import { AppContext } from '@/contexts/app-context-base';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
@@ -61,12 +51,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {children}
     </AppContext.Provider>
   );
-}
-
-export function useApp() {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  return context;
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -52,7 +52,8 @@ export function RatingDialog({
       onOpenChange(false);
       setRating(0);
       setComment('');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('Failed to submit rating:', error);
       toast.error(isRTL ? 'فشل إرسال التقييم' : 'Failed to submit rating');
     }
   };
