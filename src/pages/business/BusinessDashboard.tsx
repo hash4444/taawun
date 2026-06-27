@@ -30,7 +30,7 @@ export default function BusinessDashboard() {
   const { data: applicantsCount } = useBusinessApplicationsCount();
 
   const activeJobs = jobs?.filter(j => j.status === 'open' || j.status === 'in_progress') || [];
-  const upcomingJobs = jobs?.filter(j => j.status === 'in_progress') || [];
+  const upcomingJobs = jobs?.filter(j => j.status === 'open' && j.start_time && new Date(j.start_time) > new Date()) || [];
 
   const stats = [
     {
