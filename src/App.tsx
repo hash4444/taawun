@@ -29,7 +29,6 @@ import WorkerNotifications from "./pages/worker/WorkerNotifications";
 import WorkerProfile from "./pages/worker/WorkerProfile";
 import WorkerVerification from "./pages/worker/WorkerVerification";
 import WorkerPersonalInfo from "./pages/worker/WorkerPersonalInfo";
-import WorkerRatings from "./pages/worker/WorkerRatings";
 import WorkerPaymentMethods from "./pages/worker/WorkerPaymentMethods";
 import WorkerJobDetail from "./pages/worker/WorkerJobDetail";
 import JobDetails from "./pages/worker/JobDetails";
@@ -93,7 +92,6 @@ const AppRoutes = () => (
     <Route path="/worker/profile" element={<WorkerProfile />} />
     <Route path="/worker/profile/personal-information" element={<WorkerPersonalInfo />} />
     <Route path="/worker/verification" element={<WorkerVerification />} />
-    <Route path="/worker/ratings" element={<WorkerRatings />} />
     <Route path="/worker/payment-methods" element={<WorkerPaymentMethods />} />
     <Route path="/worker/job/:id" element={<WorkerJobDetail />} />
     <Route path="/worker/jobs/:jobId" element={<JobDetails />} />

@@ -19,7 +19,6 @@ import {
   CalendarDays,
   Bell,
   Wallet,
-  Star,
   User,
   ChevronDown,
   Settings,
@@ -44,7 +43,6 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/worker/events', label: 'Events', icon: CalendarDays },
   { path: '/worker/notifications', label: 'Notifications', icon: Bell },
   { path: '/worker/wallet', label: 'Wallet', icon: Wallet },
-  { path: '/worker/ratings', label: 'Ratings', icon: Star },
   { path: '/worker/profile', label: 'Profile', icon: User },
 ];
 
