@@ -3,13 +3,15 @@ import { MEA_COUNTRIES, Country } from '@/lib/mea-locations';
 
 const STORAGE_KEY = 'taawun_location';
 
+const DEFAULT_COUNTRY = MEA_COUNTRIES.find((c) => c.code === 'JO') || MEA_COUNTRIES[0];
+
 interface StoredLocation {
   countryCode: string;
   cityIndex: number;
 }
 
 export function useLocation() {
-  const [selectedCountry, setSelectedCountry] = useState<Country>(MEA_COUNTRIES[0]);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [selectedCityIndex, setSelectedCityIndex] = useState(0);
   const [detecting, setDetecting] = useState(false);
 
@@ -32,7 +34,7 @@ export function useLocation() {
         setSelectedCityIndex(cityIdx >= 0 ? cityIdx : 0);
       }
     } catch {
-      // Silently fall back to default (Saudi Arabia / Riyadh)
+      // Silently fall back to default (Jordan / Amman)
     } finally {
       setDetecting(false);
     }
