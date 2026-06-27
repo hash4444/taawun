@@ -89,6 +89,7 @@ export function useSaveCV() {
             languages: cv.languages as unknown as Json,
             summary: cv.summary,
             is_ai_generated: cv.is_ai_generated,
+            file_url: cv.file_url,
           })
           .eq('id', cv.id)
           .select()
@@ -108,6 +109,7 @@ export function useSaveCV() {
             languages: cv.languages as unknown as Json,
             summary: cv.summary,
             is_ai_generated: cv.is_ai_generated,
+            file_url: cv.file_url,
           })
           .select()
           .single();
