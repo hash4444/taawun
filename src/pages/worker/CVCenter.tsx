@@ -202,7 +202,7 @@ export default function CVCenter() {
     return (
       <WorkerDesktopShell>
         {fileInput}
-        <div className="space-y-6 max-w-5xl">
+        <div className="space-y-6 max-w-5xl mx-auto">
           <h1 className="text-page-title text-foreground">
             {isRTL ? 'مركز السيرة الذاتية' : 'CV Center'}
           </h1>

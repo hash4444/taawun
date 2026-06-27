@@ -81,7 +81,7 @@ export default function BusinessJobDetail() {
     if (!isMobile) {
       return (
         <BusinessDesktopShell>
-          <div className="h-60 bg-muted rounded-xl animate-pulse max-w-4xl" />
+          <div className="h-60 bg-muted rounded-xl animate-pulse max-w-4xl mx-auto" />
         </BusinessDesktopShell>
       );
     }
@@ -237,7 +237,7 @@ export default function BusinessJobDetail() {
   if (!isMobile) {
     return (
       <BusinessDesktopShell>
-        <div className="max-w-5xl space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <h1 className="text-page-title text-foreground">{job.title}</h1>
 
           <div className="grid grid-cols-[360px_1fr] gap-6 items-start">

@@ -73,7 +73,7 @@ export default function FreelanceMarketplace() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="space-y-6 max-w-6xl">
+        <div className="space-y-6 max-w-6xl mx-auto">
           <h1 className="text-page-title text-foreground">{isRTL ? 'سوق العمل الحر' : 'Freelance Marketplace'}</h1>
 
           <div className="grid grid-cols-[260px_1fr] gap-6 items-start">

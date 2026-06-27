@@ -98,7 +98,7 @@ export default function WorkerHome() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="space-y-6 max-w-5xl">
+        <div className="space-y-6 max-w-5xl mx-auto">
           <div>
             <h1 className="text-page-title text-foreground">{greeting}</h1>
             <p className="text-body text-muted-foreground mt-1">

@@ -74,7 +74,7 @@ export default function WorkerPersonalInfo() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="max-w-2xl space-y-6">
+        <div className="max-w-2xl mx-auto space-y-6">
           <h1 className="text-page-title text-foreground">
             {isRTL ? 'معلوماتي الشخصية' : 'Personal Information'}
           </h1>

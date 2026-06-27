@@ -527,7 +527,7 @@ export default function PostJob() {
   if (!isMobile) {
     return (
       <BusinessDesktopShell>
-        <div className="max-w-5xl">
+        <div className="max-w-5xl mx-auto">
           <h1 className="text-page-title text-foreground mb-1">{isRTL ? 'نشر وظيفة' : 'Post a Job'}</h1>
           <p className="text-body text-muted-foreground mb-6">
             {isRTL ? 'املأ التفاصيل وشاهد كيف ستظهر للمرشحين' : 'Fill in the details and see how it will look to candidates'}

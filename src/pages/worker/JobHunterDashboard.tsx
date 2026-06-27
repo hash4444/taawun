@@ -348,7 +348,7 @@ export default function JobHunterDashboard() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="max-w-6xl space-y-6">
+        <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-page-title text-foreground">AI Job Hunter</h1>

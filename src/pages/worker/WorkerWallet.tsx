@@ -82,7 +82,7 @@ export default function WorkerWallet() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="space-y-6 max-w-5xl">
+        <div className="space-y-6 max-w-5xl mx-auto">
           <h1 className="text-page-title text-foreground">{t('wallet')}</h1>
 
           <div className="grid grid-cols-[360px_1fr] gap-6 items-start">

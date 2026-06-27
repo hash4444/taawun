@@ -435,7 +435,7 @@ export default function CVBuilder() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="max-w-5xl space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <h1 className="text-page-title text-foreground">
             {isRTL ? 'إنشاء السيرة الذاتية' : 'Build Your CV'}
           </h1>

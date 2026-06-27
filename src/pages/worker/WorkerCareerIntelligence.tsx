@@ -136,7 +136,7 @@ export default function WorkerCareerIntelligence() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="max-w-5xl space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="max-w-5xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
           <div className="flex items-center gap-2">
             <Sparkles size={20} className="text-muted-foreground" strokeWidth={1.5} />
             <h1 className="text-page-title text-foreground">

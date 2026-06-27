@@ -284,7 +284,7 @@ export default function WorkerEvents() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="space-y-6 max-w-6xl">
+        <div className="space-y-6 max-w-6xl mx-auto">
           <h1 className="text-page-title text-foreground">{isRTL ? 'الفعاليات' : 'Events'}</h1>
 
           {tabsRow}

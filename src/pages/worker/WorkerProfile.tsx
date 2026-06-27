@@ -69,7 +69,7 @@ export default function WorkerProfile() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="max-w-3xl space-y-6">
+        <div className="max-w-3xl mx-auto space-y-6">
           <h1 className="text-page-title text-foreground">{t('profile')}</h1>
 
           <div className="card-elevated p-6">

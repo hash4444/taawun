@@ -205,7 +205,7 @@ export default function CandidateHunterDashboard() {
   if (!isMobile) {
     return (
       <BusinessDesktopShell>
-        <div className="space-y-6 max-w-6xl">
+        <div className="space-y-6 max-w-6xl mx-auto">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h1 className="text-page-title text-foreground">AI Candidate Hunter</h1>

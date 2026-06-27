@@ -297,7 +297,7 @@ export default function WorkerNotifications() {
   if (!isMobile) {
     return (
       <WorkerDesktopShell>
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
             <h1 className="text-page-title text-foreground">{isRTL ? 'الإشعارات' : 'Notifications'}</h1>
             {unreadCount > 0 && (
