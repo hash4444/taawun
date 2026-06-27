@@ -43,7 +43,7 @@ function mapSupabaseUser(su: SupabaseUser): User {
       full_name: fullName || `${firstName} ${lastName}`.trim(),
       email: su.email || '',
       phone: meta.phone || su.phone || '',
-      role,
+      role: role.toLowerCase(),
       avatarUrl: meta.avatar_url || meta.picture,
     },
   };
