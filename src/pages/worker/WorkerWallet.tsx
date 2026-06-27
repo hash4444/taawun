@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/hooks/useApp';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
@@ -13,20 +14,64 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Wallet, TrendingUp, Clock, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Wallet, TrendingUp, Clock, ArrowDownRight, ArrowUpRight, Landmark, ChevronRight } from 'lucide-react';
 import { useWorkerWallet, useWalletBalance } from '@/hooks/useWallet';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
+
+const maskIban = (iban: string) => {
+  if (iban.length <= 8) return iban;
+  return `${iban.slice(0, 4)} **** **** ${iban.slice(-4)}`;
+};
 
 export default function WorkerWallet() {
   const { t, isRTL } = useApp();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { data: transactions, isLoading } = useWorkerWallet();
   const balance = useWalletBalance();
+  const { data: bankAccounts } = useBankAccounts();
 
   const formatCurrency = (amount: number) => {
     return `${amount.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ${isRTL ? 'ر.س' : 'SAR'}`;
   };
+
+  const defaultBankAccount = bankAccounts?.find((a) => a.is_default) || bankAccounts?.[0];
+
+  const bankAccountCard = defaultBankAccount ? (
+    <button
+      onClick={() => navigate('/worker/payment-methods')}
+      className="w-full flex items-center gap-3 p-4 card-elevated hover:bg-muted/50 transition-colors text-start"
+    >
+      <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+        <Landmark size={20} className="text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-foreground truncate">{defaultBankAccount.bank_name}</p>
+        <p className="text-sm text-muted-foreground">{maskIban(defaultBankAccount.iban)}</p>
+      </div>
+      <ChevronRight size={18} className="text-muted-foreground flex-shrink-0" />
+    </button>
+  ) : (
+    <button
+      onClick={() => navigate('/worker/payment-methods')}
+      className="w-full flex items-center gap-3 p-4 card-elevated border-dashed border-2 border-warning/40 bg-warning-light hover:bg-warning-light/80 transition-colors text-start"
+    >
+      <div className="w-10 h-10 rounded-xl bg-warning/20 flex items-center justify-center flex-shrink-0">
+        <Landmark size={20} className="text-warning" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-foreground">
+          {isRTL ? 'لم يتم ربط حساب بنكي' : 'No bank account linked'}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {isRTL ? 'أضف حسابك البنكي لاستلام الدفعات' : 'Add a bank account to receive payouts'}
+        </p>
+      </div>
+      <ChevronRight size={18} className="text-muted-foreground flex-shrink-0" />
+    </button>
+  );
 
   const balanceCard = (
     <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 text-primary-foreground">
@@ -88,6 +133,7 @@ export default function WorkerWallet() {
           <div className="grid grid-cols-[360px_1fr] gap-6 items-start">
             <div className="space-y-4">
               {balanceCard}
+              {bankAccountCard}
               <Button className="w-full h-12" size="lg" disabled={balance.available <= 0}>
                 {t('requestPayout')}
               </Button>
@@ -163,6 +209,11 @@ export default function WorkerWallet() {
       {/* Balance Card */}
       <div className="px-4 py-4">
         {balanceCard}
+      </div>
+
+      {/* Bank Account */}
+      <div className="px-4 pb-4">
+        {bankAccountCard}
       </div>
 
       {/* Payout Button */}
