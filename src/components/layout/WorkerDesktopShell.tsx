@@ -13,6 +13,7 @@ import {
 import {
   Home,
   Search,
+  Briefcase,
   Bot,
   Sparkles,
   FileText,
@@ -37,6 +38,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { path: '/worker/home', label: 'Home', icon: Home },
   { path: '/worker/jobs', label: 'Find Jobs', icon: Search },
+  { path: '/worker/my-jobs', label: 'My Jobs', icon: Briefcase },
   { path: '/worker/job-hunter', label: 'AI Job Hunter', icon: Bot },
   { path: '/worker/assistant', label: 'Career Assistant', icon: Sparkles },
   { path: '/worker/cv', label: 'CV Center', icon: FileText },

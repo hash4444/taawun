@@ -83,7 +83,8 @@ const AppRoutes = () => (
     <Route path="/auth/callback" element={<OAuthCallback />} />
     <Route path="/auth/verify-phone" element={<VerifyPhone />} />
     <Route path="/worker/home" element={<WorkerHome />} />
-    <Route path="/worker/jobs" element={<WorkerJobs />} />
+    <Route path="/worker/jobs" element={<CategoryJobs />} />
+    <Route path="/worker/my-jobs" element={<WorkerJobs />} />
     <Route path="/worker/events" element={<WorkerEvents />} />
     <Route path="/worker/shifts" element={<Navigate to="/worker/events" replace />} />
     <Route path="/worker/wallet" element={<WorkerWallet />} />
@@ -94,7 +95,7 @@ const AppRoutes = () => (
     <Route path="/worker/verification" element={<WorkerVerification />} />
     <Route path="/worker/payment-methods" element={<WorkerPaymentMethods />} />
     <Route path="/worker/job/:id" element={<WorkerJobDetail />} />
-    <Route path="/worker/jobs/:jobId" element={<JobDetails />} />
+    <Route path="/worker/job-details/:jobId" element={<JobDetails />} />
     <Route path="/worker/shift/:id" element={<WorkerJobDetail />} />
     <Route path="/worker/assistant" element={<CareerAssistant />} />
     <Route path="/worker/jobs/:category" element={<CategoryJobs />} />

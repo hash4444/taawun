@@ -12,6 +12,7 @@ import {
   User,
   Shield,
   FileText,
+  Briefcase,
   HelpCircle,
   Settings,
   LogOut,
@@ -44,6 +45,11 @@ export default function WorkerProfile() {
       label: t('verification'),
       path: '/worker/verification',
       badge: verificationStatus,
+    },
+    {
+      icon: Briefcase,
+      label: isRTL ? 'وظائفي' : 'My Jobs',
+      path: '/worker/my-jobs',
     },
     {
       icon: FileText,

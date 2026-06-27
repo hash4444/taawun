@@ -7,7 +7,14 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
 import { JobCard } from '@/components/jobs/JobCard';
 import { Input } from '@/components/ui/input';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Search } from 'lucide-react';
 import { useOpenJobs, JOB_TYPE_LABELS, JobType } from '@/hooks/useJobs';
 import { useState } from 'react';
 
@@ -16,6 +23,8 @@ const CATEGORY_TITLES: Record<string, { en: string; ar: string }> = {
   part_time: { en: 'Part-Time Jobs', ar: 'وظائف دوام جزئي' },
   internship: { en: 'Internships', ar: 'فرص تدريب' },
   shift: { en: 'Shifts', ar: 'ورديات' },
+  freelance: { en: 'Freelance', ar: 'عمل حر' },
+  digital_service: { en: 'Digital Services', ar: 'خدمات رقمية' },
 };
 
 export default function CategoryJobs() {
@@ -24,16 +33,21 @@ export default function CategoryJobs() {
   const { isRTL } = useApp();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [jobTypeFilter, setJobTypeFilter] = useState<JobType | 'all'>(
+    (category as JobType) || 'all'
+  );
 
-  const jobType = category as JobType;
-  const { data: jobs, isLoading } = useOpenJobs(jobType);
+  const activeJobType = jobTypeFilter === 'all' ? undefined : jobTypeFilter;
+  const { data: jobs, isLoading } = useOpenJobs(activeJobType);
 
   const filteredJobs = (jobs || []).filter(job =>
     job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (job.businesses?.trade_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const title = CATEGORY_TITLES[category || '']?.[isRTL ? 'ar' : 'en'] || category || '';
+  const title = category
+    ? CATEGORY_TITLES[category]?.[isRTL ? 'ar' : 'en'] || category
+    : (isRTL ? 'تصفح الوظائف' : 'Find Jobs');
 
   const resultsCount = (
     <p className="text-sm text-muted-foreground">
@@ -49,6 +63,22 @@ export default function CategoryJobs() {
         {isRTL ? 'لا توجد وظائف متاحة حالياً' : 'No jobs available at the moment'}
       </p>
     </div>
+  );
+
+  const jobTypeFilterSelect = (
+    <Select value={jobTypeFilter} onValueChange={(value) => setJobTypeFilter(value as JobType | 'all')}>
+      <SelectTrigger className="h-10 bg-background">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{isRTL ? 'جميع الأنواع' : 'All Types'}</SelectItem>
+        {Object.entries(JOB_TYPE_LABELS).map(([key, labels]) => (
+          <SelectItem key={key} value={key}>
+            {isRTL ? labels.ar : labels.en}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 
   if (!isMobile) {
@@ -77,10 +107,10 @@ export default function CategoryJobs() {
                 </div>
               </div>
               <div className="pt-2 border-t border-border">
-                <p className="text-caption font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                  {isRTL ? 'الفئة' : 'Category'}
-                </p>
-                <p className="text-body text-foreground">{title}</p>
+                <label className="text-caption font-medium text-muted-foreground uppercase tracking-wide mb-2 block">
+                  {isRTL ? 'نوع الوظيفة' : 'Job Type'}
+                </label>
+                {jobTypeFilterSelect}
               </div>
             </div>
 
@@ -128,9 +158,9 @@ export default function CategoryJobs() {
             className="ps-10 h-11 bg-card"
           />
         </div>
-        <button className="w-11 h-11 rounded-lg bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors">
-          <SlidersHorizontal size={18} className="text-muted-foreground" />
-        </button>
+        <div className="w-36">
+          {jobTypeFilterSelect}
+        </div>
       </div>
 
       {/* Results */}

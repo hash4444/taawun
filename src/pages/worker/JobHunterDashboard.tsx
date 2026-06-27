@@ -174,7 +174,7 @@ export default function JobHunterDashboard() {
                 )}
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-caption capitalize">{m.status.replace("_", " ")}</Badge>
-                  <Button size="sm" variant="ghost" asChild><a href={`/worker/jobs/${m.job_id}`}>View job →</a></Button>
+                  <Button size="sm" variant="ghost" asChild><a href={`/worker/job-details/${m.job_id}`}>View job →</a></Button>
                 </div>
               </CardContent>
             </Card>
@@ -197,7 +197,7 @@ export default function JobHunterDashboard() {
                   {d.cover_letter}
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" asChild><a href={`/worker/jobs/${d.job_id}`}>View job</a></Button>
+                  <Button size="sm" variant="outline" asChild><a href={`/worker/job-details/${d.job_id}`}>View job</a></Button>
                   <Button size="sm" onClick={async () => {
                     try { await submitDraft(d.id); toast.success("Application submitted"); }
                     catch (e: unknown) { toast.error(e instanceof Error ? e.message : String(e)); }
