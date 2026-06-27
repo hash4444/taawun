@@ -33,7 +33,11 @@ export default function BusinessWallet() {
     const pending = transactions
       .filter(e => e.status === 'pending')
       .reduce((sum, e) => sum + Number(e.amount), 0);
-    
+
+    // `available` is intentionally 0: wallet_ledger rows for a business are
+    // always job payments owed/paid to workers (an expense), and there is no
+    // funding/deposit/escrow table tracking money the business has put into
+    // the platform. Without that, there's no real balance to report here.
     return { available: 0, totalPayments, pending };
   };
 
