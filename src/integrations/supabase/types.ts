@@ -14,6 +14,219 @@ export type Database = {
   }
   public: {
     Tables: {
+      student_profiles: {
+        Row: {
+          user_id: string
+          university: string | null
+          degree: string | null
+          graduation_year: number | null
+          academic_status: string | null
+          city: string | null
+          skills: string[]
+          preferred_job_types: string[]
+          preferred_hours: string | null
+          work_eligibility: string | null
+          eligibility_confirmed: boolean
+          adult_consent_at: string | null
+          consent_to_matching: boolean
+          onboarding_completed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          university?: string | null
+          degree?: string | null
+          graduation_year?: number | null
+          academic_status?: string | null
+          city?: string | null
+          skills?: string[]
+          preferred_job_types?: string[]
+          preferred_hours?: string | null
+          work_eligibility?: string | null
+          eligibility_confirmed?: boolean
+          adult_consent_at?: string | null
+          consent_to_matching?: boolean
+          onboarding_completed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          university?: string | null
+          degree?: string | null
+          graduation_year?: number | null
+          academic_status?: string | null
+          city?: string | null
+          skills?: string[]
+          preferred_job_types?: string[]
+          preferred_hours?: string | null
+          work_eligibility?: string | null
+          eligibility_confirmed?: boolean
+          adult_consent_at?: string | null
+          consent_to_matching?: boolean
+          onboarding_completed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      availability_preferences: {
+        Row: {
+          user_id: string
+          timezone: string
+          weekly_windows: Json
+          minimum_shift_minutes: number
+          travel_buffer_minutes: number
+          share_with_employers: boolean
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          timezone?: string
+          weekly_windows?: Json
+          minimum_shift_minutes?: number
+          travel_buffer_minutes?: number
+          share_with_employers?: boolean
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          timezone?: string
+          weekly_windows?: Json
+          minimum_shift_minutes?: number
+          travel_buffer_minutes?: number
+          share_with_employers?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      academic_calendar_events: {
+        Row: {
+          id: string
+          user_id: string
+          source: string
+          external_uid: string
+          start_at: string
+          end_at: string
+          busy: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          source: string
+          external_uid: string
+          start_at: string
+          end_at: string
+          busy?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          source?: string
+          external_uid?: string
+          start_at?: string
+          end_at?: string
+          busy?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      calendar_connections: {
+        Row: {
+          id: string
+          user_id: string
+          provider: string
+          status: string
+          last_synced_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          provider: string
+          status?: string
+          last_synced_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          provider?: string
+          status?: string
+          last_synced_at?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          title_ar: string | null
+          body: string
+          body_ar: string | null
+          link: string | null
+          event_type: string
+          data: Json
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          title_ar?: string | null
+          body: string
+          body_ar?: string | null
+          link?: string | null
+          event_type?: string
+          data?: Json
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          title_ar?: string | null
+          body?: string
+          body_ar?: string | null
+          link?: string | null
+          event_type?: string
+          data?: Json
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      application_audit_logs: {
+        Row: {
+          id: string
+          application_id: string
+          actor_id: string
+          previous_status: string | null
+          new_status: string
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          application_id: string
+          actor_id: string
+          previous_status?: string | null
+          new_status: string
+          note?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          application_id?: string
+          actor_id?: string
+          previous_status?: string | null
+          new_status?: string
+          note?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       admin_actions: {
         Row: {
           action: string
@@ -76,6 +289,9 @@ export type Database = {
       }
       ai_agent_settings: {
         Row: {
+          paused: boolean
+          mode: string
+          auto_apply_consented_at: string | null
           auto_apply_enabled: boolean
           created_at: string
           daily_application_limit: number
@@ -89,6 +305,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          paused?: boolean
+          mode?: string
+          auto_apply_consented_at?: string | null
           auto_apply_enabled?: boolean
           created_at?: string
           daily_application_limit?: number
@@ -102,6 +321,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          paused?: boolean
+          mode?: string
+          auto_apply_consented_at?: string | null
           auto_apply_enabled?: boolean
           created_at?: string
           daily_application_limit?: number
@@ -201,6 +423,9 @@ export type Database = {
       }
       applications: {
         Row: {
+          interview_at: string | null
+          employer_message: string | null
+          decision_at: string | null
           cover_letter: string | null
           cover_letter_ai: boolean
           created_at: string
@@ -213,6 +438,9 @@ export type Database = {
           worker_id: string
         }
         Insert: {
+          interview_at?: string | null
+          employer_message?: string | null
+          decision_at?: string | null
           cover_letter?: string | null
           cover_letter_ai?: boolean
           created_at?: string
@@ -225,6 +453,9 @@ export type Database = {
           worker_id: string
         }
         Update: {
+          interview_at?: string | null
+          employer_message?: string | null
+          decision_at?: string | null
           cover_letter?: string | null
           cover_letter_ai?: boolean
           created_at?: string
@@ -328,6 +559,8 @@ export type Database = {
       }
       businesses: {
         Row: {
+          verification_reviewed_at: string | null
+          verification_reviewed_by: string | null
           created_at: string
           id: string
           legal_name: string | null
@@ -341,6 +574,8 @@ export type Database = {
           verification_status: string
         }
         Insert: {
+          verification_reviewed_at?: string | null
+          verification_reviewed_by?: string | null
           created_at?: string
           id: string
           legal_name?: string | null
@@ -354,6 +589,8 @@ export type Database = {
           verification_status?: string
         }
         Update: {
+          verification_reviewed_at?: string | null
+          verification_reviewed_by?: string | null
           created_at?: string
           id?: string
           legal_name?: string | null
@@ -403,6 +640,7 @@ export type Database = {
       }
       candidate_hunter_settings: {
         Row: {
+          paused: boolean
           business_id: string
           created_at: string
           daily_outreach_limit: number
@@ -416,6 +654,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          paused?: boolean
           business_id: string
           created_at?: string
           daily_outreach_limit?: number
@@ -429,6 +668,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          paused?: boolean
           business_id?: string
           created_at?: string
           daily_outreach_limit?: number
@@ -713,6 +953,10 @@ export type Database = {
       }
       jobs: {
         Row: {
+          schedule_kind: string
+          country: string
+          student_friendly: boolean
+          eligibility_requirements: string | null
           address: string | null
           business_id: string | null
           category: string | null
@@ -749,6 +993,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          schedule_kind?: string
+          country?: string
+          student_friendly?: boolean
+          eligibility_requirements?: string | null
           address?: string | null
           business_id?: string | null
           category?: string | null
@@ -787,6 +1035,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          schedule_kind?: string
+          country?: string
+          student_friendly?: boolean
+          eligibility_requirements?: string | null
           address?: string | null
           business_id?: string | null
           category?: string | null
@@ -878,6 +1130,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_initialized: boolean
           avatar_url: string | null
           city: string | null
           country: string | null
@@ -891,6 +1144,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_initialized?: boolean
           avatar_url?: string | null
           city?: string | null
           country?: string | null
@@ -904,6 +1158,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_initialized?: boolean
           avatar_url?: string | null
           city?: string | null
           country?: string | null
@@ -1026,6 +1281,8 @@ export type Database = {
       }
       workers: {
         Row: {
+          verification_reviewed_at: string | null
+          verification_reviewed_by: string | null
           availability: string | null
           bio: string | null
           created_at: string
@@ -1035,6 +1292,8 @@ export type Database = {
           verification_status: string
         }
         Insert: {
+          verification_reviewed_at?: string | null
+          verification_reviewed_by?: string | null
           availability?: string | null
           bio?: string | null
           created_at?: string
@@ -1044,6 +1303,8 @@ export type Database = {
           verification_status?: string
         }
         Update: {
+          verification_reviewed_at?: string | null
+          verification_reviewed_by?: string | null
           availability?: string | null
           bio?: string | null
           created_at?: string
@@ -1059,6 +1320,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_candidate_summaries: { Args: { p_ids: string[] }; Returns: { user_id: string; full_name: string | null }[] }
+      get_public_businesses: { Args: { p_ids: string[] }; Returns: { id: string; trade_name: string | null; sector: string | null; logo_url: string | null; rating_avg: number | null; rating_count: number | null }[] }
+      consume_ai_budget_for_user: { Args: { p_user_id: string; p_feature: string }; Returns: boolean }
+      send_candidate_outreach: { Args: { p_draft_id: string }; Returns: undefined }
+      complete_account_setup: { Args: { account_role: string; full_name?: string; phone?: string }; Returns: undefined }
+      request_verification: { Args: Record<string, never>; Returns: undefined }
+      review_verification_document: { Args: { p_document_id: string; p_status: string; p_reason?: string }; Returns: undefined }
+      review_verification: { Args: { p_user_id: string; p_role: string; p_status: string; p_notes?: string }; Returns: undefined }
+      submit_application: { Args: { p_job_id: string; p_cover_letter?: string; p_ai_draft_id?: string }; Returns: string }
+      update_application_status: { Args: { p_application_id: string; p_status: string; p_interview_at?: string; p_message?: string }; Returns: Database["public"]["Tables"]["applications"]["Row"] }
+      consume_ai_budget: { Args: { p_feature: string }; Returns: boolean }
+      disconnect_calendar: { Args: { p_provider: string }; Returns: undefined }
+      replace_calendar_import: { Args: { p_events: Json }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1072,6 +1346,7 @@ export type Database = {
         | "matched"
         | "drafted"
         | "auto_applied"
+        | "submitted"
         | "needs_review"
         | "skipped"
         | "rejected"
@@ -1083,6 +1358,9 @@ export type Database = {
         | "rejected"
         | "cancelled"
         | "completed"
+        | "interview"
+        | "offered"
+        | "placed"
       attendance_method: "qr" | "gps" | "manual"
       candidate_match_status:
         | "matched"
@@ -1106,6 +1384,9 @@ export type Database = {
         | "open"
         | "in_progress"
         | "completed"
+        | "interview"
+        | "offered"
+        | "placed"
         | "closed"
         | "cancelled"
       job_type:
@@ -1250,12 +1531,16 @@ export const Constants = {
         "matched",
         "drafted",
         "auto_applied",
+        "submitted",
         "needs_review",
         "skipped",
         "rejected",
       ],
       app_role: ["worker", "business", "admin"],
       application_status: [
+        "interview",
+        "offered",
+        "placed",
         "applied",
         "shortlisted",
         "accepted",
