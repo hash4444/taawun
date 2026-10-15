@@ -1,151 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/hooks/useApp';
 import { useAuth } from '@/hooks/useAuth';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { MapPin, Clock, Calendar, Banknote, Briefcase } from 'lucide-react';
+import { MapPin, Clock, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
-import { JobWithPoster, JOB_TYPE_LABELS, PAYMENT_MODEL_LABELS } from '@/hooks/useJobs';
+import { JobWithPoster, JOB_TYPE_LABELS } from '@/hooks/useJobs';
+import { formatJobPay, uaeDate } from '@/lib/marketplace';
 
-interface JobCardProps {
-  job: JobWithPoster;
-  variant?: 'default' | 'compact' | 'business';
-  className?: string;
-}
-
-export function JobCard({ job, variant = 'default', className }: JobCardProps) {
+export function JobCard({ job, variant = 'default', className }: { job: JobWithPoster; variant?: 'default' | 'compact' | 'business'; className?: string }) {
   const navigate = useNavigate();
   const { isRTL } = useApp();
   const { profile } = useAuth();
-
-  const handleClick = () => {
-    if (profile?.role === 'business') {
-      navigate(`/business/job/${job.id}`);
-    } else {
-      navigate(`/worker/job/${job.id}`);
-    }
-  };
-
-  const formatPay = () => {
-    const amount = Number(job.pay_amount).toLocaleString(isRTL ? 'ar-SA' : 'en-US');
-    const currencyLabel = isRTL ? 'ر.س' : 'SAR';
-    
-    if (job.payment_model === 'hourly') {
-      return `${amount} ${currencyLabel}/${isRTL ? 'ساعة' : 'hr'}`;
-    }
-    if (job.payment_model === 'monthly') {
-      return `${amount} ${currencyLabel}/${isRTL ? 'شهر' : 'mo'}`;
-    }
-    return `${amount} ${currencyLabel}`;
-  };
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return format(date, 'dd MMM yyyy', { locale: isRTL ? ar : enUS });
-    } catch {
-      return dateStr;
-    }
-  };
-
-  const formatTime = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return format(date, 'HH:mm');
-    } catch {
-      return '';
-    }
-  };
-
-  const companyName = job.businesses?.trade_name || job.businesses?.legal_name || '';
-
-  if (variant === 'compact') {
-    return (
-      <button
-        onClick={handleClick}
-        className={cn(
-          'w-full text-start p-3 card-elevated transition-all hover:shadow-lg active:scale-[0.98]',
-          className
-        )}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h3 className="font-medium text-card-title text-foreground truncate">{job.title}</h3>
-            <p className="text-body text-muted-foreground">{companyName}</p>
-          </div>
-          <div className="text-end flex-shrink-0">
-            <p className="font-semibold text-primary">{formatPay()}</p>
-            <p className="text-caption text-muted-foreground">{formatDate(job.start_time)}</p>
-          </div>
-        </div>
-      </button>
-    );
-  }
-
-  return (
-    <button
-      onClick={handleClick}
-      className={cn(
-        'w-full text-start p-4 card-elevated transition-all hover:shadow-lg active:scale-[0.98]',
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-foreground text-card-title">{job.title}</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-body text-muted-foreground">{companyName}</span>
-            <span className="text-caption px-2 py-0.5 bg-muted rounded-full">
-              {JOB_TYPE_LABELS[job.job_type]?.[isRTL ? 'ar' : 'en'] || job.job_type}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Details */}
-      <div className="space-y-2 mb-3">
-        <div className="flex items-center gap-2 text-caption text-muted-foreground">
-          <MapPin size={14} className="flex-shrink-0 text-primary" />
-          <span className="truncate">{job.address || (isRTL ? 'الرياض' : 'Riyadh')}</span>
-          {job.remote_allowed && (
-            <span className="text-caption bg-success-light text-success px-2 py-0.5 rounded-full">
-              {isRTL ? 'عن بعد' : 'Remote'}
-            </span>
-          )}
-        </div>
-
-        {job.job_type === 'shift' && (
-          <>
-            <div className="flex items-center gap-2 text-caption text-muted-foreground">
-              <Calendar size={14} className="flex-shrink-0 text-primary" />
-              <span>{formatDate(job.start_time)}</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-caption text-muted-foreground">
-              <Clock size={14} className="flex-shrink-0 text-primary" />
-              <span>{formatTime(job.start_time)} - {formatTime(job.end_time)}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-border">
-        <div className="flex items-center gap-1.5">
-          <Banknote size={16} className="text-primary" />
-          <span className="font-semibold text-primary">{formatPay()}</span>
-        </div>
-        
-        {variant === 'business' && (
-          <span className="text-caption text-muted-foreground">
-            {job.slots_filled || 0}/{job.slots_total} {isRTL ? 'متقدمين' : 'applicants'}
-          </span>
-        )}
-      </div>
-    </button>
-  );
+  return <button onClick={() => navigate(`${profile?.role === 'business' ? '/business' : '/worker'}/job/${job.id}`)} className={cn('w-full text-start card-elevated p-5 transition-colors hover:border-primary/50 border border-border focus-visible:outline-primary', className)}>
+    <div className="flex justify-between gap-4"><div className="min-w-0"><p className="text-xs font-medium text-primary mb-2">{JOB_TYPE_LABELS[job.job_type]?.[isRTL ? 'ar' : 'en'] || job.job_type}</p><h3 className="font-semibold text-lg break-words">{job.title}</h3><p className="text-sm text-muted-foreground mt-1">{job.businesses?.trade_name || job.businesses?.legal_name || job.company_name}</p></div><ArrowUpRight size={18} className="shrink-0 text-muted-foreground" aria-hidden="true" /></div>
+    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground my-4"><span className="inline-flex gap-1 items-center"><MapPin size={14} />{job.remote_allowed ? (isRTL ? 'عن بُعد' : 'Remote') : job.address || job.location || (isRTL ? 'الإمارات' : 'UAE')}</span>{job.job_type === 'shift' && <span className="inline-flex gap-1 items-center"><Clock size={14} />{uaeDate(job.start_time, isRTL)}</span>}</div>
+    {variant !== 'compact' && job.description && <p className="line-clamp-2 text-sm text-muted-foreground mb-4">{job.description}</p>}
+    <div className="flex justify-between items-center gap-2 border-t border-border pt-3"><span className="font-semibold text-primary">{formatJobPay(job, isRTL)}</span>{variant === 'business' && <span className="text-xs text-muted-foreground">{job.slots_filled || 0}/{job.slots_total || 1} {isRTL ? 'عرض مقبول' : 'offers accepted'}</span>}</div>
+  </button>;
 }

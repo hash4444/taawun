@@ -1,259 +1,39 @@
+import { useNavigate } from 'react-router-dom';
+import { Bell, ArrowRight, CalendarDays, GraduationCap, Clock, Sparkles } from 'lucide-react';
 import { useApp } from '@/hooks/useApp';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
-import { Input } from '@/components/ui/input';
-import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
-import { Search, Briefcase, Clock, GraduationCap, Laptop, ChevronRight, AlertCircle, Sparkles, Bot } from 'lucide-react';
-import { LocationSelector } from '@/components/location/LocationSelector';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-
-const CATEGORIES = [
-  { key: 'full_time', icon: Briefcase },
-  { key: 'part_time', icon: Clock },
-  { key: 'internship', icon: GraduationCap },
-  { key: 'freelance', icon: Laptop },
-] as const;
-
-const CATEGORY_LABELS: Record<string, { en: string; ar: string; descEn: string; descAr: string }> = {
-  full_time: { en: 'Full-Time', ar: 'دوام كامل', descEn: 'Permanent positions', descAr: 'وظائف دائمة' },
-  part_time: { en: 'Part-Time', ar: 'دوام جزئي', descEn: 'Flexible hours', descAr: 'ساعات مرنة' },
-  internship: { en: 'Internships', ar: 'تدريب', descEn: 'Learn & grow', descAr: 'تعلم وتطور' },
-  freelance: { en: 'Freelance', ar: 'عمل حر', descEn: 'Gigs & services', descAr: 'مشاريع وخدمات' },
-};
+import { useMarketplaceJobs } from '@/hooks/useMarketplaceJobs';
+import { useWorkerApplications } from '@/hooks/useApplications';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useAvailabilityPreferences, useCalendarEvents } from '@/hooks/useAvailability';
+import { assessAvailability } from '@/lib/availability';
+import { uaeDate } from '@/lib/marketplace';
+import { JobCard } from '@/components/jobs/JobCard';
+import { Button } from '@/components/ui/button';
+import { MarketplaceLayout, QueryMessage } from '@/components/marketplace/MarketplaceLayout';
 
 export default function WorkerHome() {
   const { isRTL } = useApp();
-  const { profile, isVerified } = useAuth();
+  const { profile, studentData } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      navigate(`/worker/jobs/full_time?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
-  const greeting = profile?.full_name
-    ? (isRTL ? `مرحباً، ${profile.full_name}!` : `Hello, ${profile.full_name}!`)
-    : (isRTL ? 'مرحباً!' : 'Hello!');
-
-  const verificationBanner = !isVerified && (
-    <button
-      onClick={() => navigate('/worker/verification')}
-      className="w-full p-3 rounded-xl bg-warning-light border border-warning/20 dark:border-warning/15 flex items-center gap-3"
-    >
-      <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center flex-shrink-0">
-        <AlertCircle className="text-warning" size={20} />
-      </div>
-      <div className="text-start flex-1">
-        <p className="font-medium text-foreground text-sm">
-          {isRTL ? 'التحقق مطلوب' : 'Verification Required'}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {isRTL ? 'أكمل التحقق للتقديم على الوظائف' : 'Complete verification to apply for jobs'}
-        </p>
-      </div>
-    </button>
-  );
-
-  const categoryGrid = (cols: string) => (
-    <div className={cn('grid gap-3', cols)}>
-      {CATEGORIES.map(({ key, icon: Icon }) => {
-        const label = CATEGORY_LABELS[key];
-        return (
-          <button
-            key={key}
-            onClick={() => navigate(key === 'freelance' ? '/worker/freelance' : `/worker/jobs/${key}`)}
-            className="relative p-5 rounded-2xl text-start transition-all border border-border/50 dark:border-primary/25 bg-card hover:border-primary/45 dark:hover:border-primary/45 hover:shadow-sm active:scale-[0.97]"
-          >
-            <div className="w-12 h-12 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center mb-3">
-              <Icon size={24} className="text-primary" />
-            </div>
-            <h3 className="font-semibold text-foreground text-base">
-              {isRTL ? label.ar : label.en}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isRTL ? label.descAr : label.descEn}
-            </p>
-            <ChevronRight
-              size={16}
-              className={cn(
-                'absolute top-5 text-muted-foreground',
-                isRTL ? 'start-5 rotate-180' : 'end-5'
-              )}
-            />
-          </button>
-        );
-      })}
-    </div>
-  );
-
-  if (!isMobile) {
-    return (
-      <WorkerDesktopShell>
-        <div className="space-y-6 max-w-5xl mx-auto">
-          <div>
-            <h1 className="text-page-title text-foreground">{greeting}</h1>
-            <p className="text-body text-muted-foreground mt-1">
-              {isRTL ? 'ماذا تبحث عن اليوم؟' : 'What are you looking for today?'}
-            </p>
-          </div>
-
-          {verificationBanner}
-
-          {/* Search + location */}
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder={isRTL ? 'ابحث عن وظائف، شركات...' : 'Search jobs, companies...'}
-                className="ps-10 h-12 bg-card text-base rounded-xl"
-              />
-            </div>
-            <LocationSelector />
-          </div>
-
-          {/* Assistant CTAs */}
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => navigate('/worker/cv')}
-              className="p-5 rounded-2xl bg-primary text-primary-foreground flex items-center gap-4 hover:bg-primary/90 transition-all"
-            >
-              <div className="w-12 h-12 rounded-xl bg-primary-foreground/15 flex items-center justify-center flex-shrink-0">
-                <Sparkles size={24} />
-              </div>
-              <div className="text-start flex-1">
-                <h3 className="font-bold text-base">
-                  {isRTL ? 'تحدث مع مساعدك المهني' : 'Talk to Your Career Assistant'}
-                </h3>
-                <p className="text-xs opacity-80 mt-0.5">
-                  {isRTL ? 'بناء السيرة • بحث وظائف • تدريب مقابلات' : 'Build CV • Find Jobs • Interview Prep'}
-                </p>
-              </div>
-              <ChevronRight size={20} className={cn('opacity-80 flex-shrink-0', isRTL && 'rotate-180')} />
-            </button>
-
-            <button
-              onClick={() => navigate('/worker/job-hunter')}
-              className="p-5 rounded-2xl border border-border bg-card flex items-center gap-4 hover:border-primary/40 hover:shadow-sm transition-all"
-            >
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Bot size={24} className="text-primary" />
-              </div>
-              <div className="text-start flex-1">
-                <h3 className="font-semibold text-base text-foreground">
-                  {isRTL ? 'وكيل البحث عن وظائف بالذكاء الاصطناعي' : 'AI Job Hunter'}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {isRTL ? 'مطابقة تلقائية وتقديم على الوظائف نيابة عنك' : 'Auto-match and apply to jobs for you'}
-                </p>
-              </div>
-              <ChevronRight size={20} className={cn('text-muted-foreground flex-shrink-0', isRTL && 'rotate-180')} />
-            </button>
-          </div>
-
-          {/* Category Cards */}
-          <div>
-            <h2 className="text-card-title font-semibold text-foreground mb-4">
-              {isRTL ? 'تصفح حسب الفئة' : 'Browse by Category'}
-            </h2>
-            {categoryGrid('grid-cols-4')}
-          </div>
-        </div>
-      </WorkerDesktopShell>
-    );
-  }
-
-  return (
-    <MobileLayout footer={<BottomNav />} noPadding>
-      {/* Header */}
-      <PageHeader
-        title={greeting}
-        subtitle={isRTL ? 'ماذا تبحث عن اليوم؟' : 'What are you looking for today?'}
-        action={<LanguageSwitch />}
-      />
-
-      <div className="px-4">
-        <div className="mb-5">
-          <LocationSelector />
-        </div>
-
-        {verificationBanner && <div className="mb-5">{verificationBanner}</div>}
-
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-          <Input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder={isRTL ? 'ابحث عن وظائف، شركات...' : 'Search jobs, companies...'}
-            className="ps-10 h-12 bg-card text-base rounded-xl"
-          />
-        </div>
-      </div>
-
-      {/* Career Assistant CTA */}
-      <div className="px-4 pb-4">
-        <button
-          onClick={() => navigate('/worker/cv')}
-          className="w-full p-4 rounded-2xl bg-primary dark:bg-primary/90 text-primary-foreground flex items-center gap-4 hover:bg-primary/90 dark:hover:bg-primary transition-all active:scale-[0.98]"
-        >
-          <div className="w-12 h-12 rounded-xl bg-primary-foreground/15 flex items-center justify-center flex-shrink-0">
-            <Sparkles size={24} />
-          </div>
-          <div className="text-start flex-1">
-            <h3 className="font-bold text-base">
-              {isRTL ? 'تحدث مع مساعدك المهني' : 'Talk to Your Career Assistant'}
-            </h3>
-            <p className="text-xs opacity-80 mt-0.5">
-              {isRTL ? 'بناء السيرة • بحث وظائف • تدريب مقابلات' : 'Build CV • Find Jobs • Interview Prep'}
-            </p>
-          </div>
-          <ChevronRight size={20} className={cn('opacity-80', isRTL && 'rotate-180')} />
-        </button>
-      </div>
-
-      {/* AI Job Hunter CTA */}
-      <div className="px-4 pb-4">
-        <button
-          onClick={() => navigate('/worker/job-hunter')}
-          className="w-full p-4 rounded-2xl border border-border bg-card flex items-center gap-4 hover:border-primary/40 hover:shadow-sm transition-all active:scale-[0.98]"
-        >
-          <div className="w-12 h-12 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center flex-shrink-0">
-            <Bot size={24} className="text-primary" />
-          </div>
-          <div className="text-start flex-1">
-            <h3 className="font-semibold text-base text-foreground">
-              {isRTL ? 'وكيل البحث عن وظائف بالذكاء الاصطناعي' : 'AI Job Hunter'}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isRTL ? 'مطابقة تلقائية وتقديم على الوظائف نيابة عنك' : 'Auto-match and apply to jobs for you'}
-            </p>
-          </div>
-          <ChevronRight size={20} className={cn('text-muted-foreground', isRTL && 'rotate-180')} />
-        </button>
-      </div>
-
-      {/* Category Cards */}
-      <div className="px-4 pb-4">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          {isRTL ? 'تصفح حسب الفئة' : 'Browse by Category'}
-        </h2>
-        {categoryGrid('grid-cols-2')}
-      </div>
-    </MobileLayout>
-  );
+  const jobs = useMarketplaceJobs({ pageSize: 12 });
+  const applications = useWorkerApplications();
+  const notifications = useNotifications();
+  const preferences = useAvailabilityPreferences();
+  const events = useCalendarEvents();
+  const ranked = [...(jobs.data?.jobs || [])].sort((a,b) => {
+    const score = (job: typeof a) => (studentData?.preferred_job_types.includes(job.job_type) ? 3 : 0) + (studentData?.city && job.address?.toLowerCase().includes(studentData.city.toLowerCase()) ? 2 : 0) + (job.skills_required || []).filter(skill => studentData?.skills.some(s => s.toLowerCase() === skill.toLowerCase())).length;
+    return score(b) - score(a);
+  }).slice(0,6);
+  const upcoming = (applications.data || []).filter(a => a.status === 'interview' && a.interview_at && Date.parse(a.interview_at) > Date.now() || ['accepted','placed'].includes(a.status) && a.jobs?.start_time && Date.parse(a.jobs.start_time) > Date.now()).slice(0,3);
+  const unread = notifications.data?.filter(n => !n.read_at).length || 0;
+  return <MarketplaceLayout title={isRTL ? `مرحباً${profile?.firstName ? `، ${profile.firstName}` : ''}` : `Hi${profile?.firstName ? `, ${profile.firstName}` : ''}`} description={isRTL ? 'خطوتك التالية تبدأ من هنا.' : 'Make room for your next opportunity.'}>
+    <div className="flex justify-between items-center gap-3"><span className="text-xs uppercase tracking-wide text-muted-foreground">{isRTL ? 'الإمارات · طلاب وخريجون' : 'UAE · Students & graduates'}</span><Button variant="outline" size="sm" onClick={() => navigate('/worker/notifications')}><Bell size={16} className="me-2" />{isRTL ? 'الإشعارات' : 'Updates'}{unread ? ` (${unread})` : ''}</Button></div>
+    <section className="rounded-2xl bg-primary p-6 md:p-8 text-primary-foreground"><p className="text-sm opacity-85 mb-3">{isRTL ? 'الدراسة والعمل، معاً' : 'Education and work, together'}</p><h2 className="text-2xl md:text-3xl font-bold max-w-xl leading-tight">{isRTL ? 'اكتسب الخبرة دون أن تتوقف عن التعلم.' : 'Build experience while you keep learning.'}</h2><p className="mt-3 opacity-85 max-w-lg">{isRTL ? 'تدريب عملي وعمل مرن ووظائف للخريجين تناسب طموحك.' : 'Internships, flexible work and graduate roles that move you forward.'}</p><Button variant="secondary" className="mt-5" onClick={() => navigate('/worker/explore')}>{isRTL ? 'استكشف الفرص' : 'Explore opportunities'}<ArrowRight size={16} className="ms-2 rtl:rotate-180" /></Button></section>
+    <div className="grid grid-cols-2 gap-3"><button onClick={() => navigate('/worker/explore?type=part_time')} className="card-elevated text-start p-4 flex items-center gap-3"><Clock className="text-primary shrink-0" /><div><h2 className="font-semibold">{isRTL ? 'دوام جزئي' : 'Part-time work'}</h2><p className="text-xs text-muted-foreground">{isRTL ? 'خبرة بمرونة' : 'Experience with flexibility'}</p></div></button><button onClick={() => navigate('/worker/explore?type=internship')} className="card-elevated text-start p-4 flex items-center gap-3"><GraduationCap className="text-primary shrink-0" /><div><h2 className="font-semibold">{isRTL ? 'تدريب عملي' : 'Internships'}</h2><p className="text-xs text-muted-foreground">{isRTL ? 'طبّق ما تعلمته' : 'Put learning into practice'}</p></div></button></div>
+    <button onClick={() => navigate('/worker/availability')} className="card-elevated w-full text-start p-5 flex items-start gap-3"><CalendarDays className="text-primary shrink-0" /><div><h2 className="font-semibold">{isRTL ? 'اجعل العمل يناسب جدولك' : 'Find work around your timetable'}</h2><p className="text-sm text-muted-foreground mt-1">{isRTL ? 'حدد أوقات العمل التي تفضلها، وأضف جدول الجامعة اختيارياً.' : 'Set when you want to work, and optionally import your university calendar.'}</p></div></button>
+    {upcoming.length > 0 && <section className="space-y-3"><h2 className="font-semibold text-lg">{isRTL ? 'قريباً في جدولك' : 'Coming up'}</h2>{upcoming.map(a => <button key={a.id} onClick={() => navigate('/worker/applications')} className="card-elevated w-full text-start p-4"><p className="text-xs text-primary">{a.status === 'interview' ? (isRTL ? 'مقابلة' : 'Interview') : (isRTL ? 'فرصة مقبولة' : 'Accepted opportunity')}</p><p className="font-semibold">{a.jobs?.title}</p><p className="text-sm text-muted-foreground">{uaeDate(a.interview_at || a.jobs?.start_time, isRTL)}</p></button>)}</section>}
+    <section className="space-y-4"><div className="flex justify-between items-center"><h2 className="font-semibold text-lg">{isRTL ? 'فرص تستحق الاستكشاف' : 'Opportunities for you'}</h2><button onClick={() => navigate('/worker/explore')} className="text-sm text-primary underline">{isRTL ? 'عرض الكل' : 'View all'}</button></div><p className="text-sm text-muted-foreground">{isRTL ? 'مرتبة حسب أنواع العمل والمهارات والموقع في ملفك. أكد ساعات العمل مع صاحب العمل.' : 'Prioritized by your preferred job types, skills and location. Confirm working hours with the employer.'}</p>{jobs.isError ? <QueryMessage error={jobs.error} onRetry={() => jobs.refetch()} /> : jobs.isLoading ? <div className="h-48 rounded-xl bg-muted animate-pulse" /> : ranked.length ? <div className="grid md:grid-cols-2 gap-4">{ranked.map(job => { const fit = job.schedule_kind === 'fixed' && preferences.isSuccess && events.isSuccess ? assessAvailability({ start_at: job.start_time, end_at: job.end_time }, preferences.data, events.data || []) : null; return <div key={job.id} className="space-y-2"><JobCard job={job} />{fit && <p className="text-xs text-muted-foreground px-1">{fit.compatible ? (isRTL ? 'يتوافق مع أوقاتك المحفوظة' : 'Fits your saved availability') : (isRTL ? 'يحتاج الجدول إلى التأكيد' : 'Schedule needs confirmation')}</p>}</div>; })}</div> : <QueryMessage empty={isRTL ? 'لا توجد فرص منشورة حالياً. ستظهر الوظائف الجديدة هنا.' : 'No published opportunities yet. New listings will appear here.'} />}</section>
+    <button onClick={() => navigate('/worker/job-hunter')} className="flex gap-3 items-center text-start p-5 rounded-xl border border-border w-full"><Sparkles size={20} className="text-primary" /><div><h2 className="font-semibold">{isRTL ? 'مساعد البحث عن الفرص' : 'Your opportunity assistant'}</h2><p className="text-sm text-muted-foreground">{isRTL ? 'راجع الاقتراحات ووافق على الطلبات التي تريد إرسالها.' : 'Review recommendations and approve the applications you want to send.'}</p></div></button>
+  </MarketplaceLayout>;
 }

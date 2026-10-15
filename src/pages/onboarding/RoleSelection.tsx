@@ -27,6 +27,7 @@ export default function RoleSelection() {
     <div className="space-y-4">
       <button
         onClick={() => setSelectedRole('worker')}
+        aria-pressed={selectedRole === 'worker'}
         className={cn(
           'w-full p-6 rounded-2xl border-2 transition-all duration-200 text-start',
           selectedRole === 'worker'
@@ -47,6 +48,7 @@ export default function RoleSelection() {
 
       <button
         onClick={() => setSelectedRole('business')}
+        aria-pressed={selectedRole === 'business'}
         className={cn(
           'w-full p-6 rounded-2xl border-2 transition-all duration-200 text-start',
           selectedRole === 'business'
@@ -72,7 +74,7 @@ export default function RoleSelection() {
       <OnboardingDesktopFrame topAction={<LanguageSwitch />}>
         <h1 className="text-2xl font-bold text-foreground mb-2">{t('selectRole')}</h1>
         <p className="text-muted-foreground mb-6">
-          {isRTL ? 'اختر كيف ستستخدم تعاون' : "Choose how you'll use Taawun. Two minutes, that's it."}
+          {t('roleChoiceHint')}
         </p>
         {roleCards}
         <Button onClick={handleContinue} disabled={!selectedRole} className="w-full h-14 text-lg font-semibold mt-6" size="lg">
@@ -84,10 +86,10 @@ export default function RoleSelection() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       <PageHeader
         title={t('selectRole')}
-        subtitle={isRTL ? 'اختر كيف ستستخدم تعاون' : "Choose how you'll use Taawun. Two minutes, that's it."}
+        subtitle={t('roleChoiceHint')}
         showBack
         backPath="/onboarding/welcome"
         action={<LanguageSwitch />}

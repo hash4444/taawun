@@ -13,6 +13,7 @@ import {
 import {
   Home,
   Search,
+  ClipboardList,
   Bot,
   Sparkles,
   FileText,
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
+import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 
 interface NavItem {
   path: string;
@@ -37,16 +39,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/worker/home', label: 'Home', icon: Home },
-  { path: '/worker/jobs', label: 'Find Jobs', icon: Search },
-  { path: '/worker/job-hunter', label: 'AI Job Hunter', icon: Bot },
-  { path: '/worker/assistant', label: 'Career Assistant', icon: Sparkles },
-  { path: '/worker/cv', label: 'CV Center', icon: FileText },
-  { path: '/worker/events', label: 'Events', icon: CalendarDays },
-  { path: '/worker/notifications', label: 'Notifications', icon: Bell },
-  { path: '/worker/wallet', label: 'Wallet', icon: Wallet },
-  { path: '/worker/ratings', label: 'Ratings', icon: Star },
+  { path: '/worker/explore', label: 'Explore', icon: Search },
+  { path: '/worker/applications', label: 'Applications', icon: ClipboardList },
   { path: '/worker/profile', label: 'Profile', icon: User },
 ];
+const NAV_AR: Record<string, string> = { Home: 'الرئيسية', Explore: 'استكشف', Applications: 'طلباتي', Profile: 'الملف الشخصي' };
 
 interface WorkerDesktopShellProps {
   children: ReactNode;
@@ -73,7 +70,7 @@ export function WorkerDesktopShell({ children }: WorkerDesktopShellProps) {
           <img src={logo} alt="Taawun" className="w-8 h-8 rounded-lg object-contain" />
           <div className="leading-tight">
             <p className="text-card-title font-semibold text-foreground">Taawun</p>
-            <p className="text-caption text-muted-foreground">{isRTL ? 'لوحة العامل' : 'Worker'}</p>
+            <p className="text-caption text-muted-foreground">{isRTL ? 'طالب أو خريج' : 'Students & graduates'}</p>
           </div>
         </div>
 
@@ -94,7 +91,7 @@ export function WorkerDesktopShell({ children }: WorkerDesktopShellProps) {
                 )}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className="flex-shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">{isRTL ? NAV_AR[item.label] : item.label}</span>
               </button>
             );
           })}
@@ -120,7 +117,7 @@ export function WorkerDesktopShell({ children }: WorkerDesktopShellProps) {
             <StatusBadge status={verificationStatus} size="sm" />
           </div>
 
-          <DropdownMenu>
+          <div className="flex items-center gap-2"><LanguageSwitch /><DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-muted transition-colors">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -147,7 +144,7 @@ export function WorkerDesktopShell({ children }: WorkerDesktopShellProps) {
                 {isRTL ? 'تسجيل الخروج' : 'Log Out'}
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu></div>
         </header>
 
         {/* Page content */}

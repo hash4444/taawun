@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/button';
 import {
   Building2,
+  Bell,
   Shield,
   CreditCard,
   HelpCircle,
@@ -35,6 +36,7 @@ export default function BusinessProfile() {
   };
 
   const menuItems = [
+    { icon: Bell, label: isRTL ? 'الإشعارات' : 'Notifications', path: '/business/notifications' },
     {
       icon: Building2,
       label: isRTL ? 'معلومات المنشأة' : 'Business Information',
@@ -48,19 +50,11 @@ export default function BusinessProfile() {
     },
     {
       icon: Users,
-      label: isRTL ? 'إدارة العمال' : 'Worker Management',
+      label: isRTL ? 'إدارة المرشحين' : 'Candidate management',
       path: '/business/workers',
     },
-    {
-      icon: Star,
-      label: isRTL ? 'التقييمات' : 'Ratings',
-      path: '/business/ratings',
-    },
-    {
-      icon: CreditCard,
-      label: isRTL ? 'طرق الدفع' : 'Payment Methods',
-      path: '/business/payment-methods',
-    },
+
+
     {
       icon: HelpCircle,
       label: isRTL ? 'المساعدة والدعم' : 'Help & Support',

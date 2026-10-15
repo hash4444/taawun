@@ -1,55 +1,28 @@
+import { Home, Search, ClipboardList, User, LayoutDashboard, Plus, Users, Building2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import { useApp } from '@/hooks/useApp';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, CalendarDays, Bell, User, LayoutDashboard, Plus, Sparkles, BarChart3 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function BottomNav() {
   const navigate = useNavigate();
   const currentPath = useLocation().pathname;
-  const { t, isRTL } = useApp();
+  const { isRTL } = useApp();
   const { profile } = useAuth();
-
-  const workerNavItems = [
-    { path: '/worker/home', icon: Home, label: t('home') },
-    { path: '/worker/assistant', icon: Sparkles, label: isRTL ? 'المساعد' : 'Assistant' },
-    { path: '/worker/events', icon: CalendarDays, label: isRTL ? 'فعاليات' : 'Events' },
-    { path: '/worker/notifications', icon: Bell, label: isRTL ? 'إشعارات' : 'Alerts' },
-    { path: '/worker/profile', icon: User, label: t('profile') },
+  const items = profile?.role === 'business' ? [
+    { path: '/business/dashboard', icon: LayoutDashboard, en: 'Jobs', ar: 'الوظائف' },
+    { path: '/business/post-job', icon: Plus, en: 'Post a job', ar: 'نشر وظيفة' },
+    { path: '/business/workers', icon: Users, en: 'Candidates', ar: 'المرشحون' },
+    { path: '/business/profile', icon: Building2, en: 'Profile', ar: 'الملف' },
+  ] : [
+    { path: '/worker/home', icon: Home, en: 'Home', ar: 'الرئيسية' },
+    { path: '/worker/explore', icon: Search, en: 'Explore', ar: 'استكشف' },
+    { path: '/worker/applications', icon: ClipboardList, en: 'Applications', ar: 'طلباتي' },
+    { path: '/worker/profile', icon: User, en: 'Profile', ar: 'الملف' },
   ];
-
-  const businessNavItems = [
-    { path: '/business/dashboard', icon: LayoutDashboard, label: t('dashboard') },
-    { path: '/business/assistant', icon: Sparkles, label: isRTL ? 'المساعد' : 'Assistant' },
-    { path: '/business/post-shift', icon: Plus, label: t('postShift') },
-    { path: '/business/intelligence', icon: BarChart3, label: isRTL ? 'ذكاء' : 'CI' },
-    { path: '/business/profile', icon: User, label: t('profile') },
-  ];
-
-  const navItems = profile?.role === 'business' ? businessNavItems : workerNavItems;
-
-  return (
-    <nav className="flex items-center justify-around py-2 px-4">
-      {navItems.map((item) => {
-        const isActive = currentPath === item.path || currentPath.startsWith(item.path + '/');
-        const Icon = item.icon;
-
-        return (
-          <button
-            key={item.path}
-            onClick={() => navigate(item.path)}
-            className={cn(
-              'flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200',
-              isActive
-                ? 'text-primary bg-primary/10 dark:bg-primary/15'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-xs font-medium">{item.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
+  return <nav aria-label={isRTL ? 'التنقل الرئيسي' : 'Main navigation'} className="grid grid-cols-4 gap-1 p-2">{items.map(item => {
+    const active = currentPath === item.path || currentPath.startsWith(item.path + '/');
+    const Icon = item.icon;
+    return <button key={item.path} aria-current={active ? 'page' : undefined} onClick={() => navigate(item.path)} className={cn('flex flex-col items-center gap-1 min-w-0 px-1 py-2 rounded-xl', active ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground')}><Icon size={21} aria-hidden="true" /><span className="text-xs font-medium">{isRTL ? item.ar : item.en}</span></button>;
+  })}</nav>;
 }

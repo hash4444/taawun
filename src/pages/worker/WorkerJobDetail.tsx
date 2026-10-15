@@ -1,286 +1,39 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
+import { MapPin, Banknote, CalendarDays, Building2, CheckCircle2 } from 'lucide-react';
 import { useApp } from '@/hooks/useApp';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
-import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Calendar, Banknote, Building2, AlertCircle, QrCode, CheckCircle2, Star } from 'lucide-react';
 import { useJob, JOB_TYPE_LABELS } from '@/hooks/useJobs';
-import { useHasApplied, useApplyToJob, useWorkerApplications } from '@/hooks/useApplications';
-import { useJobAttendance, useCheckIn, useCheckOut } from '@/hooks/useAttendance';
-import { useHasRated } from '@/hooks/useRatings';
-import { RatingDialog } from '@/components/ratings/RatingDialog';
-import { QRScanner } from '@/components/attendance/QRScanner';
-import { format } from 'date-fns';
+import { useApplyToJob, useHasApplied } from '@/hooks/useApplications';
+import { useAvailabilityPreferences, useCalendarEvents } from '@/hooks/useAvailability';
+import { assessAvailability } from '@/lib/availability';
+import { APPLICATION_LABELS, formatJobPay, uaeDate } from '@/lib/marketplace';
+import { MarketplaceLayout, QueryMessage } from '@/components/marketplace/MarketplaceLayout';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function WorkerJobDetail() {
   const { id } = useParams<{ id: string }>();
-  const { t, isRTL } = useApp();
-  const { user, isVerified } = useAuth();
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
-
-  const [showScanner, setShowScanner] = useState(false);
-  const [showRatingDialog, setShowRatingDialog] = useState(false);
-
-  const { data: job, isLoading } = useJob(id || '');
-  const { data: existingApplication } = useHasApplied(id || '');
-  const { data: applications } = useWorkerApplications();
-  const { data: attendance } = useJobAttendance(id || '');
-  const { data: hasRated } = useHasRated(id || '', job?.business_id || '');
-  
-  const applyMutation = useApplyToJob();
-  const checkInMutation = useCheckIn();
-  const checkOutMutation = useCheckOut();
-
-  // Find full application for this job
-  const fullApplication = applications?.find(a => a.job_id === id);
-
-  const handleApply = async () => {
-    if (!id) return;
-    try {
-      await applyMutation.mutateAsync(id);
-      toast.success(isRTL ? 'تم التقديم بنجاح!' : 'Application submitted!');
-    } catch (error: unknown) {
-      toast.error(isRTL ? 'فشل التقديم' : 'Application failed', { description: error instanceof Error ? error.message : String(error) });
-    }
-  };
-
-  const handleScan = async (data: { jobId: string; businessId: string; action: 'check_in' | 'check_out' }) => {
-    setShowScanner(false);
-    
-    if (data.jobId !== id) {
-      toast.error(isRTL ? 'رمز QR غير صحيح لهذه الوظيفة' : 'Wrong QR code for this job');
-      return;
-    }
-
-    try {
-      if (data.action === 'check_in') {
-        await checkInMutation.mutateAsync({ jobId: data.jobId, businessId: data.businessId });
-        toast.success(isRTL ? 'تم تسجيل الحضور!' : 'Checked in successfully!');
-      } else {
-        await checkOutMutation.mutateAsync(data.jobId);
-        toast.success(isRTL ? 'تم تسجيل الخروج!' : 'Checked out successfully!');
-      }
-    } catch (error: unknown) {
-      toast.error(isRTL ? 'فشلت العملية' : 'Operation failed', { description: error instanceof Error ? error.message : String(error) });
-    }
-  };
-
-  if (isLoading) {
-    if (!isMobile) {
-      return (
-        <WorkerDesktopShell>
-          <div className="h-60 bg-muted rounded-xl animate-pulse max-w-4xl mx-auto" />
-        </WorkerDesktopShell>
-      );
-    }
-    return (
-      <MobileLayout header={<PageHeader title={isRTL ? 'تفاصيل الوظيفة' : 'Job Details'} showBack />}>
-        <div className="p-4"><div className="h-60 bg-muted rounded-xl animate-pulse" /></div>
-      </MobileLayout>
-    );
-  }
-
-  if (!job) {
-    if (!isMobile) {
-      return (
-        <WorkerDesktopShell>
-          <div className="text-center text-muted-foreground py-16">
-            {isRTL ? 'لم يتم العثور على الوظيفة' : 'Job not found'}
-          </div>
-        </WorkerDesktopShell>
-      );
-    }
-    return (
-      <MobileLayout header={<PageHeader title={isRTL ? 'تفاصيل الوظيفة' : 'Job Details'} showBack />}>
-        <div className="p-4 text-center text-muted-foreground">{isRTL ? 'لم يتم العثور على الوظيفة' : 'Job not found'}</div>
-      </MobileLayout>
-    );
-  }
-
-  const hasApplied = !!existingApplication;
-  const isAccepted = fullApplication?.status === 'accepted';
-  const isCompleted = fullApplication?.status === 'completed';
-  const isCheckedIn = !!attendance?.check_in_at;
-  const isCheckedOut = !!attendance?.check_out_at;
-  const canRate = isCompleted && !hasRated;
-  const isShiftType = job.job_type === 'shift';
-
-  const jobInfoCard = (
-    <div className="card-elevated p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-caption px-2 py-1 bg-primary/10 text-primary rounded-full">
-          {JOB_TYPE_LABELS[job.job_type]?.[isRTL ? 'ar' : 'en'] || job.job_type}
-        </span>
-        {job.remote_allowed && (
-          <span className="text-caption px-2 py-1 bg-success-light text-success rounded-full">
-            {isRTL ? 'عن بعد' : 'Remote'}
-          </span>
-        )}
-      </div>
-      <h1 className="text-card-title font-bold text-foreground mb-2">{job.title}</h1>
-      <div className="flex items-center gap-2 text-muted-foreground mb-4">
-        <Building2 size={16} />
-        <span>{job.businesses?.trade_name || job.businesses?.legal_name}</span>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center gap-3"><MapPin size={18} className="text-primary" /><span>{job.address || (isRTL ? 'الرياض' : 'Riyadh')}</span></div>
-        {isShiftType && (
-          <>
-            <div className="flex items-center gap-3"><Calendar size={18} className="text-primary" /><span>{format(new Date(job.start_time), 'yyyy-MM-dd')}</span></div>
-            <div className="flex items-center gap-3"><Clock size={18} className="text-primary" /><span>{format(new Date(job.start_time), 'HH:mm')} - {format(new Date(job.end_time), 'HH:mm')}</span></div>
-          </>
-        )}
-        <div className="flex items-center gap-3">
-          <Banknote size={18} className="text-primary" />
-          <span className="font-semibold">
-            {job.pay_amount} {job.currency || 'SAR'}
-            {job.payment_model === 'hourly' && (isRTL ? '/ساعة' : '/hr')}
-            {job.payment_model === 'monthly' && (isRTL ? '/شهر' : '/mo')}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-
-  const descriptionCard = job.description && (
-    <div className="card-elevated p-4">
-      <h2 className="font-semibold mb-2">{isRTL ? 'الوصف' : 'Description'}</h2>
-      <p className="text-muted-foreground">{job.description}</p>
-    </div>
-  );
-
-  const attendanceCard = isShiftType && isAccepted && (
-    <div className="card-elevated p-4">
-      <h2 className="font-semibold mb-3">{isRTL ? 'حالة الحضور' : 'Attendance Status'}</h2>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span>{t('checkIn')}</span>
-          {isCheckedIn ? (
-            <span className="flex items-center gap-1 text-success">
-              <CheckCircle2 size={16} />
-              {format(new Date(attendance!.check_in_at!), 'HH:mm')}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{isRTL ? 'لم يتم' : 'Not done'}</span>
-          )}
-        </div>
-        <div className="flex items-center justify-between">
-          <span>{t('checkOut')}</span>
-          {isCheckedOut ? (
-            <span className="flex items-center gap-1 text-success">
-              <CheckCircle2 size={16} />
-              {format(new Date(attendance!.check_out_at!), 'HH:mm')}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{isRTL ? 'لم يتم' : 'Not done'}</span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  const verificationWarning = !isVerified && (
-    <div className="p-3 rounded-xl bg-warning-light flex items-center gap-3">
-      <AlertCircle className="text-warning" size={20} />
-      <p className="text-sm">{isRTL ? 'يجب إكمال التحقق أولاً للتقديم' : 'Complete verification first to apply'}</p>
-    </div>
-  );
-
-  const actionButtons = (
-    <>
-      {/* Rate Business Button */}
-      {canRate && (
-        <Button variant="outline" onClick={() => setShowRatingDialog(true)} className="w-full h-12">
-          <Star size={18} className="me-2" />
-          {t('rateBusiness')}
-        </Button>
-      )}
-
-      {/* QR Scan Button (only for shifts) */}
-      {isShiftType && isAccepted && !isCheckedOut && (
-        <Button variant="outline" onClick={() => setShowScanner(true)} className="w-full h-12">
-          <QrCode size={18} className="me-2" />
-          {isCheckedIn ? t('checkOut') : t('checkIn')} - {t('scanQR')}
-        </Button>
-      )}
-
-      {/* Apply Button */}
-      {!hasApplied && (
-        <Button onClick={handleApply} disabled={!isVerified || applyMutation.isPending} className="w-full h-14">
-          {applyMutation.isPending ? t('loading') : t('apply')}
-        </Button>
-      )}
-
-      {/* Status Display */}
-      {hasApplied && !isAccepted && !isCompleted && (
-        <Button disabled className="w-full h-14">{isRTL ? 'تم التقديم' : 'Already Applied'}</Button>
-      )}
-    </>
-  );
-
-  const scannerAndRatingDialog = (
-    <>
-      {/* QR Scanner */}
-      {showScanner && (
-        <QRScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
-      )}
-
-      {/* Rating Dialog */}
-      <RatingDialog
-        open={showRatingDialog}
-        onOpenChange={setShowRatingDialog}
-        jobId={id || ''}
-        toUserId={job.business_id || ''}
-        userName={job.businesses?.trade_name || job.businesses?.legal_name || ''}
-      />
-    </>
-  );
-
-  if (!isMobile) {
-    return (
-      <WorkerDesktopShell>
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="grid grid-cols-[1fr_320px] gap-6 items-start">
-            <div className="space-y-4">
-              {jobInfoCard}
-              {descriptionCard}
-              {attendanceCard}
-            </div>
-
-            <div className="space-y-3 sticky top-6">
-              {verificationWarning}
-              {actionButtons}
-            </div>
-          </div>
-        </div>
-
-        {scannerAndRatingDialog}
-      </WorkerDesktopShell>
-    );
-  }
-
-  return (
-    <MobileLayout header={<PageHeader title={isRTL ? 'تفاصيل الوظيفة' : 'Job Details'} showBack />} noPadding>
-      <div className="px-4 py-4 space-y-4">
-        {jobInfoCard}
-        {descriptionCard}
-        {attendanceCard}
-        {verificationWarning}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="px-4 pb-6 pb-safe space-y-3">
-        {actionButtons}
-      </div>
-
-      {scannerAndRatingDialog}
-    </MobileLayout>
-  );
+  const { isRTL } = useApp();
+  const { studentData } = useAuth();
+  const jobQuery = useJob(id || '');
+  const existing = useHasApplied(id || '');
+  const apply = useApplyToJob();
+  const preferences = useAvailabilityPreferences();
+  const events = useCalendarEvents();
+  const job = jobQuery.data;
+  const fit = job?.schedule_kind === 'fixed' && preferences.isSuccess && events.isSuccess ? assessAvailability({ start_at: job.start_time, end_at: job.end_time }, preferences.data, events.data || []) : null;
+  const closed = !!job && (job.status !== 'open' || Date.parse(job.end_time) <= Date.now() || !!job.deadline && Date.parse(job.deadline) <= Date.now());
+  const eligible = !!studentData?.adult_consent_at && !!studentData?.eligibility_confirmed;
+  // A known calendar conflict must never be overridden by a relevance score.
+  const scheduleConflict = job?.schedule_kind === 'fixed' && (!fit || !fit.compatible);
+  const submit = async () => { if (!id) return; try { await apply.mutateAsync(id); toast.success(isRTL ? 'تم إرسال طلبك' : 'Your application was submitted'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Application failed'); } };
+  return <MarketplaceLayout title={isRTL ? 'تفاصيل الفرصة' : 'Opportunity details'} back>
+    {jobQuery.isError ? <QueryMessage error={jobQuery.error} onRetry={() => jobQuery.refetch()} /> : jobQuery.isLoading ? <div className="h-72 bg-muted rounded-xl animate-pulse" /> : !job ? <QueryMessage empty={isRTL ? 'لم يتم العثور على هذه الفرصة.' : 'This opportunity could not be found.'} /> : <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="space-y-5"><section className="card-elevated p-6 space-y-4"><span className="text-sm text-primary font-medium">{JOB_TYPE_LABELS[job.job_type]?.[isRTL ? 'ar' : 'en']}</span><h2 className="font-bold text-2xl">{job.title}</h2><p className="flex gap-2 items-center text-muted-foreground"><Building2 size={17} />{job.businesses?.trade_name || job.businesses?.legal_name || job.company_name}</p><div className="grid sm:grid-cols-2 gap-4 text-sm"><p className="flex gap-2 items-center"><MapPin size={17} className="text-primary" />{job.remote_allowed ? (isRTL ? 'عن بُعد' : 'Remote') : job.address || job.location || 'UAE'}</p><p className="flex gap-2 items-center"><Banknote size={17} className="text-primary" />{formatJobPay(job,isRTL)}</p><p className="flex gap-2 items-center"><CalendarDays size={17} className="text-primary" />{uaeDate(job.start_time,isRTL,job.job_type === 'shift')}</p>{job.deadline && <p>{isRTL ? 'آخر موعد: ' : 'Apply before: '}{uaeDate(job.deadline,isRTL,false)}</p>}</div></section>
+      <section className="card-elevated p-6 space-y-3"><h2 className="font-semibold text-lg">{isRTL ? 'عن الفرصة' : 'About the opportunity'}</h2><p className="text-muted-foreground whitespace-pre-wrap break-words">{job.description || (isRTL ? 'لم يقدم صاحب العمل تفاصيل إضافية.' : 'The employer has not added further details.')}</p>{!!job.skills_required?.length && <div><h3 className="font-semibold text-sm mb-2">{isRTL ? 'المهارات المطلوبة' : 'Skills requested'}</h3><div className="flex flex-wrap gap-2">{job.skills_required.map(skill => <span key={skill} className="rounded-full bg-muted text-sm px-3 py-1">{skill}</span>)}</div></div>}</section>
+      <p className="text-xs text-muted-foreground">{isRTL ? 'جميع المواعيد بتوقيت الإمارات. أكد ساعات العمل والأجر ومتطلبات التصريح مع صاحب العمل قبل قبول العرض.' : 'Dates are shown in UAE time. Confirm working hours, pay and permit requirements with the employer before accepting an offer.'}</p></div>
+      <aside className="card-elevated p-5 space-y-4 lg:sticky lg:top-20"><h2 className="font-semibold">{isRTL ? 'خطوتك التالية' : 'Your next step'}</h2>{existing.data ? <><p className="text-primary font-medium flex gap-2"><CheckCircle2 size={18} />{APPLICATION_LABELS[existing.data.status]?.[isRTL ? 'ar' : 'en'] || existing.data.status}</p><Button asChild className="w-full"><Link to="/worker/applications">{isRTL ? 'متابعة الطلب' : 'Track application'}</Link></Button></> : <><p className="text-sm text-muted-foreground">{isRTL ? 'سنشارك معلومات ملفك وسيرتك المحفوظة مع صاحب العمل.' : 'Your saved profile information will be shared with this employer.'}</p>{!eligible && <Link to="/worker/profile/setup" className="text-sm text-primary underline block">{isRTL ? 'أكمل تأكيد العمر وأهلية العمل أولاً' : 'Complete your age and work eligibility details first'}</Link>}{closed && <p className="text-sm text-muted-foreground">{isRTL ? 'هذه الفرصة مغلقة أو انتهى موعدها.' : 'This opportunity is closed or has expired.'}</p>}{existing.isError && <QueryMessage error={existing.error} onRetry={() => existing.refetch()} />}<Button onClick={submit} disabled={apply.isPending || existing.isLoading || existing.isError || closed || !eligible || scheduleConflict} className="w-full">{apply.isPending ? (isRTL ? 'جاري الإرسال…' : 'Submitting…') : (isRTL ? 'تقديم طلب' : 'Apply now')}</Button></>}
+      <div className="border-t border-border pt-4"><h3 className="font-medium text-sm mb-2">{isRTL ? 'الملاءمة مع جدولك' : 'Your schedule fit'}</h3><p className="text-sm text-muted-foreground">{fit?.compatible ? (isRTL ? 'تتوافق مع تفضيلاتك وأحداثك المستوردة الحالية.' : 'Fits your saved preferences and currently imported calendar.') : scheduleConflict ? (isRTL ? 'تحتاج هذه المواعيد إلى نافذة توفر متوافقة وفحص التقويم قبل التقديم.' : 'This fixed schedule needs a compatible saved availability window and a current calendar check before applying.') : (isRTL ? 'يحتاج الجدول إلى التأكيد. حدد تفضيلاتك واسأل عن ساعات العمل.' : 'Schedule needs confirmation. Set your preferences and check working hours.')}</p><Link to="/worker/availability" className="text-sm underline text-primary mt-2 inline-block">{isRTL ? 'إدارة التوفر' : 'Manage availability'}</Link></div></aside>
+    </div>}
+  </MarketplaceLayout>;
 }

@@ -17,6 +17,7 @@ import {
   Users,
   Wallet,
   Building2,
+  Bell,
   Star,
   BarChart3,
   Sparkles,
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
+import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 
 interface NavItem {
   path: string;
@@ -35,15 +37,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/business/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/business/post-job', label: 'Post a Job', icon: Plus },
-  { path: '/business/candidate-hunter', label: 'Candidate Hunter', icon: Bot },
-  { path: '/business/workers', label: 'Workers', icon: Users },
-  { path: '/business/intelligence', label: 'Hiring Intelligence', icon: BarChart3 },
-  { path: '/business/wallet', label: 'Wallet', icon: Wallet },
-  { path: '/business/ratings', label: 'Ratings', icon: Star },
-  { path: '/business/profile', label: 'Business Profile', icon: Building2 },
+  { path: '/business/dashboard', label: 'Job listings', icon: LayoutDashboard },
+  { path: '/business/post-job', label: 'Post a job', icon: Plus },
+  { path: '/business/workers', label: 'Candidates', icon: Users },
+  { path: '/business/candidate-hunter', label: 'Candidate recommendations', icon: Bot },
+  { path: '/business/profile', label: 'Business profile', icon: Building2 },
 ];
+const NAV_AR: Record<string, string> = { 'Job listings': 'الوظائف المنشورة', 'Post a job': 'نشر وظيفة', Candidates: 'المرشحون', 'Candidate recommendations': 'ترشيحات المواهب', 'Business profile': 'ملف المنشأة' };
 
 interface BusinessDesktopShellProps {
   children: ReactNode;
@@ -94,20 +94,14 @@ export function BusinessDesktopShell({ children }: BusinessDesktopShellProps) {
                 )}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className="flex-shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">{isRTL ? NAV_AR[item.label] : item.label}</span>
               </button>
             );
           })}
         </nav>
 
         <div className="px-3 py-4 border-t border-border space-y-1">
-          <button
-            onClick={() => navigate('/business/assistant')}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-body font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-start"
-          >
-            <Sparkles size={18} className="flex-shrink-0" />
-            <span className="truncate">{isRTL ? 'مساعد التوظيف' : 'Hiring Assistant'}</span>
-          </button>
+
           <button
             onClick={() => navigate('/help')}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-body font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-start"
@@ -127,7 +121,7 @@ export function BusinessDesktopShell({ children }: BusinessDesktopShellProps) {
             <StatusBadge status={verificationStatus} size="sm" />
           </div>
 
-          <DropdownMenu>
+          <div className="flex items-center gap-2"><LanguageSwitch /><button onClick={() => navigate('/business/notifications')} aria-label={isRTL ? 'الإشعارات' : 'Notifications'} className="p-2 rounded-xl hover:bg-muted"><Bell size={19} /></button><DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-muted transition-colors">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -154,7 +148,7 @@ export function BusinessDesktopShell({ children }: BusinessDesktopShellProps) {
                 {isRTL ? 'تسجيل الخروج' : 'Log Out'}
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu></div>
         </header>
 
         {/* Page content */}

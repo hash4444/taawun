@@ -2,128 +2,63 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
+import { hydrateJobBusinesses, type PublicBusiness } from '@/lib/publicBusinesses';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
 type JobInsert = Database['public']['Tables']['jobs']['Insert'];
 type JobUpdate = Database['public']['Tables']['jobs']['Update'];
-type Business = Database['public']['Tables']['businesses']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Worker = Database['public']['Tables']['workers']['Row'];
-
 export type JobType = Database['public']['Enums']['job_type'];
 export type PaymentModel = Database['public']['Enums']['payment_model'];
 export type ServiceDirection = Database['public']['Enums']['service_direction'];
 export type EmploymentType = Database['public']['Enums']['employment_type'];
-
 export interface JobWithPoster extends Job {
-  businesses?: Business | null;
+  businesses?: PublicBusiness | null;
   poster_profile?: Profile | null;
   poster_worker?: Worker | null;
 }
-
-// Fetch open jobs for workers with optional type filter
 export function useOpenJobs(jobType?: JobType) {
-  return useQuery({
-    queryKey: ['jobs', 'open', jobType],
-    queryFn: async () => {
-      let query = supabase
-        .from('jobs')
-        .select(`
-          *,
-          businesses (
-            id,
-            trade_name,
-            legal_name,
-            sector,
-            rating_avg,
-            rating_count
-          )
-        `)
-        .eq('status', 'open')
-        .order('created_at', { ascending: false });
-
-      if (jobType) {
-        query = query.eq('job_type', jobType);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as JobWithPoster[];
-    },
-  });
+  return useQuery({queryKey:['jobs','open',jobType],queryFn:async()=>{
+    const now=new Date().toISOString();
+    let query=supabase.from('jobs').select('*').eq('status','open').gt('end_time',now).or(`deadline.is.null,deadline.gt.${now}`).order('created_at',{ascending:false}).limit(100);
+    if(jobType)query=query.eq('job_type',jobType);
+    const {data,error}=await query;
+    if(error)throw error;
+    return hydrateJobBusinesses(data||[]);
+  }});
 }
-
-// Fetch jobs posted by the current user (business or worker)
 export function useMyPostedJobs() {
-  const { user } = useAuth();
-  
-  return useQuery({
-    queryKey: ['jobs', 'posted', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from('jobs')
-        .select(`
-          *,
-          businesses (
-            id,
-            trade_name,
-            legal_name
-          )
-        `)
-        .eq('poster_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as JobWithPoster[];
-    },
-    enabled: !!user,
-  });
+  const {user}=useAuth();
+  return useQuery({queryKey:['jobs','posted',user?.id],enabled:!!user,queryFn:async()=>{
+    if(!user)return [];
+    const {data,error}=await supabase.from('jobs').select('*').eq('poster_id',user.id).order('created_at',{ascending:false}).limit(200);
+    if(error)throw error;
+    return hydrateJobBusinesses(data||[]);
+  }});
 }
-
-// Fetch single job
-export function useJob(jobId: string) {
-  return useQuery({
-    queryKey: ['job', jobId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select(`
-          *,
-          businesses (
-            id,
-            trade_name,
-            legal_name,
-            sector,
-            rating_avg,
-            rating_count
-          )
-        `)
-        .eq('id', jobId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as JobWithPoster | null;
-    },
-    enabled: !!jobId,
-  });
+export function useJob(jobId:string) {
+  return useQuery({queryKey:['job',jobId],enabled:!!jobId,queryFn:async()=>{
+    const {data,error}=await supabase.from('jobs').select('*').eq('id',jobId).maybeSingle();
+    if(error)throw error;
+    return data ? (await hydrateJobBusinesses([data]))[0] : null;
+  }});
 }
 
 // Create job
 export function useCreateJob() {
   const queryClient = useQueryClient();
-  const { user, profile } = useAuth();
+  const { user, profile, isVerified } = useAuth();
   
   return useMutation({
     mutationFn: async (job: Omit<JobInsert, 'poster_id' | 'poster_role'>) => {
       if (!user || !profile) throw new Error('Not authenticated');
+      if (profile.role !== 'business' || !isVerified) throw new Error('A verified business account is required to publish jobs.');
       
       const insertData: JobInsert = {
         ...job,
         poster_id: user.id,
-        poster_role: (profile.role || 'worker') as 'admin' | 'business' | 'worker',
+        poster_role: 'business',
         business_id: profile.role === 'business' ? user.id : null,
       };
 
@@ -145,16 +80,17 @@ export function useCreateJob() {
 // Create multiple jobs at once
 export function useCreateJobs() {
   const queryClient = useQueryClient();
-  const { user, profile } = useAuth();
+  const { user, profile, isVerified } = useAuth();
   
   return useMutation({
     mutationFn: async (jobs: Omit<JobInsert, 'poster_id' | 'poster_role'>[]) => {
       if (!user || !profile) throw new Error('Not authenticated');
+      if (profile.role !== 'business' || !isVerified) throw new Error('A verified business account is required to publish jobs.');
       
       const insertData: JobInsert[] = jobs.map(job => ({
         ...job,
         poster_id: user.id,
-        poster_role: (profile.role || 'worker') as 'admin' | 'business' | 'worker',
+        poster_role: 'business',
         business_id: profile.role === 'business' ? user.id : null,
       }));
 

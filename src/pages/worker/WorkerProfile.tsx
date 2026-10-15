@@ -1,185 +1,28 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, GraduationCap, CalendarDays, FileText, Sparkles, Shield, Settings, Bell, LogOut, ChevronRight } from 'lucide-react';
 import { useApp } from '@/hooks/useApp';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
+import { MarketplaceLayout } from '@/components/marketplace/MarketplaceLayout';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/button';
-import {
-  User,
-  Shield,
-  FileText,
-  HelpCircle,
-  Settings,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export default function WorkerProfile() {
-  const { t, isRTL } = useApp();
-  const { profile, user, verificationStatus, signOut } = useAuth();
+  const { isRTL } = useApp();
+  const { profile, studentData, verificationStatus, signOut } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-
-  const ArrowIcon = isRTL ? ChevronLeft : ChevronRight;
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/onboarding/welcome');
-  };
-
-  const menuItems = [
-    {
-      icon: User,
-      label: isRTL ? 'معلوماتي الشخصية' : 'Personal Information',
-      path: '/worker/profile/personal-information',
-    },
-    {
-      icon: Shield,
-      label: t('verification'),
-      path: '/worker/verification',
-      badge: verificationStatus,
-    },
-    {
-      icon: FileText,
-      label: isRTL ? 'السيرة الذاتية' : 'My CV',
-      path: '/worker/cv',
-    },
-    {
-      icon: HelpCircle,
-      label: isRTL ? 'المساعدة والدعم' : 'Help & Support',
-      path: '/help',
-    },
-    {
-      icon: Settings,
-      label: isRTL ? 'الإعدادات' : 'Settings',
-      path: '/settings',
-    },
+  const items = [
+    { path:'/worker/profile/setup',icon:GraduationCap,en:'Education, skills & work preferences',ar:'الدراسة والمهارات وتفضيلات العمل' },
+    { path:'/worker/availability',icon:CalendarDays,en:'Calendar & availability',ar:'التقويم وأوقات التوفر' },
+    { path:'/worker/cv',icon:FileText,en:'Your CV',ar:'سيرتك الذاتية' },
+    { path:'/worker/job-hunter',icon:Sparkles,en:'AI recommendations & approval settings',ar:'ترشيحات المساعد وإعدادات الموافقة' },
+    { path:'/worker/verification',icon:Shield,en:'Identity verification',ar:'التحقق من الهوية' },
+    { path:'/worker/notifications',icon:Bell,en:'Notifications',ar:'الإشعارات' },
+    { path:'/settings',icon:Settings,en:'Language & appearance',ar:'اللغة والمظهر' },
   ];
-
-  const displayName = profile?.firstName
-    ? `${profile.firstName} ${profile.lastName}`
-    : (user?.email?.split('@')[0] || (isRTL ? 'مستخدم' : 'User'));
-
-  if (!isMobile) {
-    return (
-      <WorkerDesktopShell>
-        <div className="max-w-3xl mx-auto space-y-6">
-          <h1 className="text-page-title text-foreground">{t('profile')}</h1>
-
-          <div className="card-elevated p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
-                <User size={32} className="text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-card-title font-semibold text-foreground">{displayName}</h2>
-                <p className="text-body text-muted-foreground">{user?.email}</p>
-                <StatusBadge status={verificationStatus} size="sm" className="mt-2" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card-elevated divide-y divide-border">
-            {menuItems.map((item) => (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors text-start"
-              >
-                <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
-                  <item.icon size={20} className="text-primary" />
-                </div>
-                <span className="flex-1 text-start text-body font-medium text-foreground">
-                  {item.label}
-                </span>
-                {item.badge && <StatusBadge status={item.badge} size="sm" showIcon={false} />}
-                <ArrowIcon size={18} className="text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            className="w-full h-12 text-destructive border-destructive/30 hover:bg-destructive-light max-w-xs"
-          >
-            <LogOut size={18} className="me-2" />
-            {isRTL ? 'تسجيل الخروج' : 'Log Out'}
-          </Button>
-        </div>
-      </WorkerDesktopShell>
-    );
-  }
-
-  return (
-    <MobileLayout
-      footer={<BottomNav />}
-      noPadding
-    >
-      <PageHeader title={t('profile')} />
-      {/* Profile Card */}
-      <div className="px-4 py-4">
-        <div className="card-elevated p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center">
-              <User size={32} className="text-primary" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-foreground">
-                {displayName}
-              </h2>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              <StatusBadge
-                status={verificationStatus}
-                size="sm"
-                className="mt-2"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Menu Items */}
-      <div className="px-4 pb-4">
-        <div className="card-elevated divide-y divide-border">
-          {menuItems.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
-                <item.icon size={20} className="text-primary" />
-              </div>
-              <span className="flex-1 text-start font-medium text-foreground">
-                {item.label}
-              </span>
-              {item.badge && (
-                <StatusBadge status={item.badge} size="sm" showIcon={false} />
-              )}
-              <ArrowIcon size={18} className="text-muted-foreground" />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Logout */}
-      <div className="px-4 pb-6">
-        <Button
-          variant="outline"
-          onClick={handleLogout}
-          className="w-full h-12 text-destructive border-destructive/30 hover:bg-destructive-light"
-        >
-          <LogOut size={18} className="me-2" />
-          {isRTL ? 'تسجيل الخروج' : 'Log Out'}
-        </Button>
-      </div>
-    </MobileLayout>
-  );
+  return <MarketplaceLayout title={isRTL ? 'ملفي الشخصي' : 'Your profile'} description={isRTL ? 'قصتك ومهاراتك، في مكان واحد.' : 'Your story, skills and preferences in one place.'}>
+    <section className="card-elevated p-6 flex gap-4 items-start"><div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0"><User size={28} /></div><div className="min-w-0"><h2 className="text-xl font-bold">{profile?.full_name || profile?.email}</h2><p className="text-sm text-muted-foreground break-all">{profile?.email}</p>{studentData?.university && <p className="text-sm mt-2">{studentData.university}{studentData.degree ? ` · ${studentData.degree}` : ''}</p>}{studentData?.city && <p className="text-sm text-muted-foreground">{studentData.city}, UAE</p>}<StatusBadge status={verificationStatus} size="sm" className="mt-3" /></div></section>
+    {!!studentData?.skills?.length && <div className="flex gap-2 flex-wrap">{studentData.skills.map(skill => <span key={skill} className="px-3 py-1 rounded-full bg-muted text-sm">{skill}</span>)}</div>}
+    <div className="card-elevated divide-y divide-border">{items.map(item => <Link key={item.path} to={item.path} className="flex items-center gap-3 p-4 hover:bg-muted/50"><item.icon size={20} className="text-primary shrink-0" /><span className="flex-1 font-medium text-sm">{isRTL ? item.ar : item.en}</span><ChevronRight size={16} className="text-muted-foreground rtl:rotate-180" /></Link>)}</div>
+    <Button variant="outline" onClick={async () => { await signOut(); navigate('/auth/login'); }}><LogOut size={16} className="me-2" />{isRTL ? 'تسجيل الخروج' : 'Log out'}</Button>
+  </MarketplaceLayout>;
 }

@@ -1,239 +1,33 @@
-import { useState } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileLayout } from "@/components/layout/MobileLayout";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { BusinessDesktopShell } from "@/components/layout/BusinessDesktopShell";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { Loader2, Sparkles, Send } from "lucide-react";
-import {
-  useCandidateHunterSettings,
-  useSaveCandidateHunterSettings,
-  useCandidateMatches,
-  useOutreachDrafts,
-  runCandidateHunter,
-  sendOutreachDraft,
-  CandidateHunterSettings,
-} from "@/hooks/useCandidateHunter";
-
-const STATUS_BADGE: Record<string, string> = {
-  matched: 'bg-info-light text-info',
-  drafted: 'bg-warning-light text-warning',
-  outreached: 'bg-success-light text-success',
-  needs_review: 'bg-warning-light text-warning',
-  skipped: 'bg-muted text-muted-foreground',
-  rejected: 'bg-destructive-light text-destructive',
-};
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { useApp } from '@/hooks/useApp';
+import { useAuth } from '@/hooks/useAuth';
+import { MarketplaceLayout, QueryMessage } from '@/components/marketplace/MarketplaceLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useCandidateHunterSettings, useSaveCandidateHunterSettings, useCandidateMatches, useOutreachDrafts, useCandidateHunterLogs, runCandidateHunter, sendOutreachDraft, type CandidateHunterSettings } from '@/hooks/useCandidateHunter';
+import { uaeDate } from '@/lib/marketplace';
+import { toast } from 'sonner';
 
 export default function CandidateHunterDashboard() {
-  const isMobile = useIsMobile();
-  const { data: settings } = useCandidateHunterSettings();
-  const { data: matches = [] } = useCandidateMatches();
-  const { data: drafts = [] } = useOutreachDrafts();
-  const saveSettings = useSaveCandidateHunterSettings();
-
-  const [localSettings, setLocalSettings] = useState<CandidateHunterSettings | null>(null);
-  const [running, setRunning] = useState(false);
-
-  const s = localSettings ?? settings;
-
-  const handleRun = async () => {
-    setRunning(true);
-    try {
-      const r = await runCandidateHunter();
-      toast.success(`Scanned ${r.scanned}, matched ${r.matched}, outreached ${r.outreached}`);
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    } finally {
-      setRunning(false);
-    }
-  };
-
-  const handleSaveSettings = async () => {
-    if (!s) return;
-    try {
-      await saveSettings.mutateAsync(s);
-      toast.success("Candidate Hunter settings saved!");
-      setLocalSettings(null);
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const handleSendDraft = async (draftId: string) => {
-    try {
-      await sendOutreachDraft(draftId);
-      toast.success("Outreach sent");
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const settingsCard = (
-    <Card>
-      <CardHeader>
-        <CardTitle>Core Settings</CardTitle>
-        <CardDescription>Configure recruitment automation</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-            <div className="space-y-0.5">
-              <Label className="text-base">AI Mode</Label>
-              <p className="text-body text-muted-foreground">Select how AI operates</p>
-            </div>
-            <select
-              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background max-w-[140px]"
-              value={s?.mode ?? "MANUAL"}
-              onChange={(e) => setLocalSettings({ ...(s as CandidateHunterSettings), mode: e.target.value as CandidateHunterSettings["mode"] })}
-            >
-              <option value="MANUAL">Manual</option>
-              <option value="APPROVAL">Approval</option>
-              <option value="AUTO">Auto-Outreach</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Required Match Score (%)</Label>
-            <Input
-              type="number"
-              min={50}
-              max={100}
-              value={s?.minimum_match_score ?? 80}
-              onChange={(e) => setLocalSettings({ ...(s as CandidateHunterSettings), minimum_match_score: Number(e.target.value) })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Max Daily Outreach</Label>
-            <Input
-              type="number"
-              min={1}
-              max={50}
-              value={s?.daily_outreach_limit ?? 10}
-              onChange={(e) => setLocalSettings({ ...(s as CandidateHunterSettings), daily_outreach_limit: Number(e.target.value) })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Target Roles (comma separated)</Label>
-            <Input
-              value={(s?.target_roles ?? []).join(", ")}
-              onChange={(e) => setLocalSettings({ ...(s as CandidateHunterSettings), target_roles: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Excluded Keywords (comma separated)</Label>
-            <Input
-              value={(s?.excluded_keywords ?? []).join(", ")}
-              onChange={(e) => setLocalSettings({ ...(s as CandidateHunterSettings), excluded_keywords: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
-            />
-          </div>
-        </div>
-
-        <Button className="w-full" onClick={handleSaveSettings} disabled={saveSettings.isPending}>
-          {saveSettings.isPending ? "Saving..." : "Save Preferences"}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-
-  const activityCard = (
-    <Card>
-      <CardHeader>
-        <CardTitle>Candidate Matches</CardTitle>
-        <CardDescription>Workers the AI has scored against your open jobs</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {matches.length === 0 ? (
-          <p className="text-body text-muted-foreground text-center py-8">
-            No matches yet — press "Run now" to scan candidates against your open jobs.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {matches.map((m) => (
-              <div key={m.id} className="flex items-center justify-between p-4 border rounded-lg transition-all hover:bg-muted/50">
-                <div className="min-w-0">
-                  <h4 className="font-semibold truncate">{m.candidate_name ?? "Candidate"}</h4>
-                  <p className="text-body text-muted-foreground truncate">
-                    Role: {m.job_title ?? "Job"} • Match: {m.score}%
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className={`px-2 py-1 text-caption font-semibold rounded-full capitalize ${STATUS_BADGE[m.status] ?? ''}`}>
-                    {m.status.replace('_', ' ')}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {drafts.length > 0 && (
-          <div className="mt-6 space-y-3">
-            <h4 className="font-semibold text-body">Outreach drafts awaiting your approval</h4>
-            {drafts.map((d) => (
-              <div key={d.id} className="p-4 bg-primary/10 rounded-lg border border-primary/20 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-body font-medium">{d.job_title ?? "Job"}</p>
-                  <Button size="sm" onClick={() => handleSendDraft(d.id)}>
-                    <Send size={14} className="me-1.5" /> Send
-                  </Button>
-                </div>
-                <p className="text-body text-muted-foreground whitespace-pre-wrap">{d.outreach_message}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-
-  const runButton = (
-    <Button onClick={handleRun} disabled={running}>
-      {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-      Run now
-    </Button>
-  );
-
-  if (!isMobile) {
-    return (
-      <BusinessDesktopShell>
-        <div className="space-y-6 max-w-6xl mx-auto">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <h1 className="text-page-title text-foreground">AI Candidate Hunter</h1>
-              <p className="text-body text-muted-foreground mt-1">
-                Let AI find, vet, and reach out to the best candidates for your open roles.
-              </p>
-            </div>
-            {runButton}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="col-span-1">{settingsCard}</div>
-            <div className="col-span-1 md:col-span-2">{activityCard}</div>
-          </div>
-        </div>
-      </BusinessDesktopShell>
-    );
-  }
-
-  return (
-    <MobileLayout
-      header={<PageHeader title="AI Candidate Hunter" subtitle="AI-sourced candidates for your roles" showBack action={runButton} />}
-      footer={<BottomNav />}
-    >
-      <div className="space-y-4">
-        {settingsCard}
-        {activityCard}
-      </div>
-    </MobileLayout>
-  );
+  const { isRTL } = useApp();
+  const { isVerified } = useAuth();
+  const qc = useQueryClient();
+  const settings=useCandidateHunterSettings(),matches=useCandidateMatches(),drafts=useOutreachDrafts(),logs=useCandidateHunterLogs();
+  const save=useSaveCandidateHunterSettings();
+  const [local,setLocal]=useState<CandidateHunterSettings|null>(null),[running,setRunning]=useState(false),[sending,setSending]=useState<string|null>(null);
+  const current=local||settings.data;
+  const refresh=()=>{for(const key of ['candidate_hunter_settings','candidate_matches','candidate_outreach_drafts','candidate_hunter_logs'])qc.invalidateQueries({queryKey:[key]});};
+  const persist=async(next:CandidateHunterSettings)=>{try{await save.mutateAsync(next);setLocal(null);toast.success(isRTL?'تم حفظ الإعدادات':'Settings saved');}catch(e){toast.error(e instanceof Error?e.message:'Could not save settings');}};
+  const run=async()=>{setRunning(true);try{const result=await runCandidateHunter();refresh();toast.success(isRTL?`تمت مراجعة ${result.scanned||0} مرشح`:`Reviewed ${result.scanned||0} candidates`);}catch(e){toast.error(e instanceof Error?e.message:'Request failed');}finally{setRunning(false);}};
+  const send=async(id:string)=>{setSending(id);try{await sendOutreachDraft(id);refresh();toast.success(isRTL?'تم إرسال الدعوة داخل المنصة':'In-app invitation sent');}catch(e){toast.error(e instanceof Error?e.message:'Could not send invitation');}finally{setSending(null);}};
+  return <MarketplaceLayout employer title={isRTL?'ترشيحات المواهب':'Candidate recommendations'} description={isRTL?'راجع التوافق وادعُ الطلاب المهتمين إلى فرصك.':'Review matches and invite interested students to your opportunities.'}>
+    <section className="rounded-xl bg-primary/5 border border-primary/20 p-5 space-y-3"><p className="text-sm">{isRTL?'نقترح طلاباً وافقوا على المطابقة. تراجع كل دعوة قبل إرسالها داخل تعاون. الإرسال التلقائي والبريد الخارجي غير مفعلين.':'We recommend students who consented to matching. You review every invitation before sending it inside Taawun. Automatic outreach and external email are not enabled.'}</p>{!isVerified&&<Link className="text-primary underline text-sm block" to="/business/verification">{isRTL?'أكمل تحقق المنشأة لاستخدام الترشيحات.':'Complete business verification to use recommendations.'}</Link>}<div className="flex flex-wrap gap-3"><Button onClick={run} disabled={running||!isVerified||!current||!!current.paused||settings.isError}>{running?(isRTL?'جاري البحث…':'Finding candidates…'):(isRTL?'البحث عن مرشحين':'Find candidates')}</Button>{current&&<Button variant="outline" disabled={save.isPending} onClick={()=>persist({...current,paused:!current.paused,mode:current.mode==='AUTO'?'APPROVAL':current.mode})}>{current.paused?(isRTL?'استئناف':'Resume'):(isRTL?'إيقاف المساعد الآن':'Pause assistant now')}</Button>}</div>{current?.paused&&<p role="status" className="text-sm">{isRTL?'المساعد متوقف.':'Assistant paused.'}</p>}</section>
+    <div className="grid lg:grid-cols-[320px_1fr] gap-6 items-start"><section className="card-elevated p-5">{settings.isError?<QueryMessage error={settings.error} onRetry={()=>settings.refetch()}/>:!current?<p>{isRTL?'جاري التحميل…':'Loading…'}</p>:<form onSubmit={e=>{e.preventDefault();persist(current);}} className="space-y-4"><h2 className="font-semibold">{isRTL?'تفضيلات الترشيح':'Recommendation preferences'}</h2><div className="space-y-2"><Label htmlFor="candidate-mode">{isRTL?'طريقة العمل':'Mode'}</Label><select id="candidate-mode" className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm" value={current.mode==='AUTO'?'APPROVAL':current.mode} onChange={e=>setLocal({...current,mode:e.target.value as CandidateHunterSettings['mode']})}><option value="MANUAL">{isRTL?'ترشيحات فقط':'Recommendations only'}</option><option value="APPROVAL">{isRTL?'موافقة قبل كل دعوة — الافتراضي':'Approve every invitation — default'}</option><option disabled value="AUTO">{isRTL?'إرسال تلقائي — غير مفعل':'Automatic outreach — not enabled'}</option></select></div><div className="space-y-2"><Label htmlFor="candidate-score">{isRTL?'الحد الأدنى للتوافق (%)':'Minimum match score (%)'}</Label><Input id="candidate-score" min={50} max={100} type="number" value={current.minimum_match_score} onChange={e=>setLocal({...current,minimum_match_score:Number(e.target.value)})}/></div><div className="space-y-2"><Label htmlFor="outreach-limit">{isRTL?'الحد اليومي للدعوات':'Daily invitation limit'}</Label><Input id="outreach-limit" type="number" min={1} max={50} step={1} value={current.daily_outreach_limit} onChange={e=>setLocal({...current,daily_outreach_limit:Number(e.target.value)})}/></div><div className="space-y-2"><Label htmlFor="target-roles">{isRTL?'أدوار مستهدفة (بفواصل)':'Target roles (comma separated)'}</Label><Input id="target-roles" value={current.target_roles.join(', ')} onChange={e=>setLocal({...current,target_roles:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})}/></div><div className="space-y-2"><Label htmlFor="candidate-locations">{isRTL?'مواقع (بفواصل)':'Locations (comma separated)'}</Label><Input id="candidate-locations" value={current.locations.join(', ')} onChange={e=>setLocal({...current,locations:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})}/></div><div className="space-y-2"><Label htmlFor="candidate-excluded">{isRTL?'كلمات مستبعدة (بفواصل)':'Excluded keywords (comma separated)'}</Label><Input id="candidate-excluded" value={current.excluded_keywords.join(', ')} onChange={e=>setLocal({...current,excluded_keywords:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})}/></div><Button type="submit" className="w-full" disabled={save.isPending}>{isRTL?'حفظ التفضيلات':'Save preferences'}</Button></form>}</section>
+    <div className="space-y-6"><section className="space-y-3"><h2 className="font-semibold text-lg">{isRTL?'مسودات دعوات تنتظر الموافقة':'Invitations awaiting approval'}</h2>{drafts.isError?<QueryMessage error={drafts.error} onRetry={()=>drafts.refetch()}/>:!drafts.data?.length?<QueryMessage empty={isRTL?'لا توجد دعوات جاهزة بعد.':'No invitation drafts yet.'}/>:drafts.data.map(draft=><article key={draft.id} className="card-elevated p-5 space-y-3"><h3 className="font-semibold">{draft.job_title||(isRTL?'فرصة':'Opportunity')}</h3><p className="whitespace-pre-wrap text-sm text-muted-foreground">{draft.outreach_message}</p><Button size="sm" disabled={!!sending||!!current?.paused||!isVerified} onClick={()=>send(draft.id)}>{sending===draft.id?(isRTL?'جاري الإرسال…':'Sending…'):(isRTL?'موافقة وإرسال الدعوة داخل المنصة':'Approve & send in-app invitation')}</Button></article>)}</section>
+    <section className="space-y-3"><h2 className="font-semibold text-lg">{isRTL?'مرشحون مقترحون':'Suggested candidates'}</h2>{matches.isError?<QueryMessage error={matches.error} onRetry={()=>matches.refetch()}/>:!matches.data?.length?<QueryMessage empty={isRTL?'لا توجد ترشيحات بعد.':'No candidate matches yet.'}/>:matches.data.map(match=><article key={match.id} className="card-elevated p-5 space-y-2"><div className="flex justify-between gap-3"><h3 className="font-semibold">{match.candidate_name||(isRTL?'مرشح':'Candidate')}</h3><span className="font-semibold text-primary">{match.score}%</span></div><p className="text-sm text-muted-foreground">{match.job_title}</p><p className="text-sm">{match.explanation}</p><Link className="text-primary text-sm underline" to={`/business/job/${match.job_id}`}>{isRTL?'إدارة الفرصة':'Manage opportunity'}</Link></article>)}</section>
+    <details className="card-elevated p-5"><summary className="font-semibold cursor-pointer">{isRTL?'سجل النشاط':'Activity log'}</summary><div className="space-y-3 mt-4">{logs.isError?<QueryMessage error={logs.error} onRetry={()=>logs.refetch()}/>:!logs.data?.length?<p className="text-sm text-muted-foreground">{isRTL?'لا يوجد نشاط بعد.':'No activity yet.'}</p>:logs.data.map(log=><div key={log.id}><p className="font-medium text-sm">{log.action.replace(/_/g,' ')}</p><p className="text-xs text-muted-foreground">{log.reason}</p><p className="text-xs text-muted-foreground">{uaeDate(log.created_at,isRTL)}</p></div>)}</div></details></div></div>
+  </MarketplaceLayout>;
 }

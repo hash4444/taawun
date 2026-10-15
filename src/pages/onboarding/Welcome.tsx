@@ -4,12 +4,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 import { OnboardingDesktopFrame } from '@/components/layout/OnboardingDesktopFrame';
-import { Zap, ShieldCheck, Globe2 } from 'lucide-react';
+import { FileText, CalendarDays, ClipboardCheck } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 export default function Welcome() {
   const navigate = useNavigate();
-  const { t } = useApp();
+  const { t, isRTL } = useApp();
   const isMobile = useIsMobile();
 
   const handleContinue = () => {
@@ -17,14 +17,15 @@ export default function Welcome() {
   };
 
   const benefits = [
-    { icon: Zap, label: t('benefit1') },
-    { icon: ShieldCheck, label: t('benefit2') },
-    { icon: Globe2, label: t('benefit3') },
+    { icon: FileText, label: t('benefit1') },
+    { icon: CalendarDays, label: t('benefit2') },
+    { icon: ClipboardCheck, label: t('benefit3') },
   ];
 
   if (!isMobile) {
     return (
       <OnboardingDesktopFrame topAction={<LanguageSwitch />}>
+        <p className="text-xs text-primary font-semibold mb-3">{t('marketAudience')}</p>
         <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">{t('welcome')}</h1>
         <p className="text-lg text-muted-foreground mb-8">{t('heroSubhead')}</p>
         <Button onClick={handleContinue} className="w-full h-14 text-lg font-semibold" size="lg">
@@ -36,7 +37,7 @@ export default function Welcome() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col overflow-hidden bg-background">
+    <div className="relative min-h-screen flex flex-col overflow-hidden bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Signature ambient glow — restrained, brand-color only */}
       <div
         aria-hidden
@@ -64,6 +65,7 @@ export default function Welcome() {
           className="w-24 h-24 rounded-3xl mb-7 shadow-lg ring-1 ring-border"
         />
 
+        <p className="text-xs font-semibold text-primary text-center mb-3">{t('marketAudience')}</p>
         <h1 className="text-3xl font-bold text-foreground text-center mb-2 tracking-tight">
           {t('welcome')}
         </h1>

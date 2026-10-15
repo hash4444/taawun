@@ -1,11 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface AgentSettings {
   id?: string;
   user_id?: string;
+  mode: 'RECOMMENDATIONS' | 'APPROVAL' | 'AUTO';
+  paused?: boolean;
   auto_apply_enabled: boolean;
+  auto_apply_consented_at?: string | null;
   minimum_match_score: number;
   daily_application_limit: number;
   excluded_companies: string[];
@@ -13,7 +16,6 @@ export interface AgentSettings {
   require_user_approval: boolean;
   last_run_at?: string | null;
 }
-
 export interface JobPreferences {
   id?: string;
   user_id?: string;
@@ -28,152 +30,76 @@ export interface JobPreferences {
   availability?: string | null;
   languages: string[];
 }
-
-const defaultSettings: AgentSettings = {
-  auto_apply_enabled: false,
-  minimum_match_score: 80,
-  daily_application_limit: 10,
-  excluded_companies: [],
-  excluded_keywords: [],
-  require_user_approval: false,
-};
-
-const defaultPrefs: JobPreferences = {
-  job_types: [],
-  work_modes: [],
-  locations: [],
-  industries: [],
-  skills: [],
-  languages: [],
-  salary_currency: "SAR",
-};
-
+export const DEFAULT_AGENT_SETTINGS: AgentSettings = { mode:'APPROVAL',auto_apply_enabled:false,auto_apply_consented_at:null,minimum_match_score:80,daily_application_limit:10,excluded_companies:[],excluded_keywords:[],require_user_approval:true };
 export function useAgentSettings() {
   const { user } = useAuth();
-  return useQuery({
-    queryKey: ["ai_agent_settings", user?.id],
-    queryFn: async (): Promise<AgentSettings> => {
-      if (!user) return defaultSettings;
-      const { data } = await supabase.from("ai_agent_settings").select("*").eq("user_id", user.id).maybeSingle();
-      return (data as unknown as AgentSettings) ?? defaultSettings;
-    },
-    enabled: !!user,
-  });
+  return useQuery({queryKey:['ai_agent_settings',user?.id],enabled:!!user,queryFn:async():Promise<AgentSettings>=>{
+    const {data,error}=await supabase.from('ai_agent_settings').select('*').eq('user_id',user!.id).maybeSingle();
+    if(error) throw error;
+    return data ? {...DEFAULT_AGENT_SETTINGS,...data} as AgentSettings : DEFAULT_AGENT_SETTINGS;
+  }});
 }
-
 export function useSaveAgentSettings() {
-  const qc = useQueryClient();
-  const { user } = useAuth();
-  return useMutation({
-    mutationFn: async (s: AgentSettings) => {
-      if (!user) throw new Error("Not authenticated");
-      const payload = { ...s, user_id: user.id };
-      const { data, error } = await supabase.from("ai_agent_settings").upsert(payload, { onConflict: "user_id" }).select().single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["ai_agent_settings"] }),
-  });
+  const qc=useQueryClient();const {user}=useAuth();
+  return useMutation({mutationFn:async(settings:AgentSettings)=>{
+    if(!user) throw new Error('Not authenticated');
+    if(!Number.isInteger(settings.daily_application_limit)||settings.daily_application_limit<1||settings.daily_application_limit>50||settings.minimum_match_score<50||settings.minimum_match_score>100) throw new Error('Use a daily limit from 1–50 and a match score from 50–100.');
+    if(settings.mode==='AUTO') throw new Error('Automatic submissions are not enabled for this release.');
+    const {data,error}=await supabase.from('ai_agent_settings').upsert({...settings,user_id:user.id,auto_apply_enabled:false,require_user_approval:settings.mode==='APPROVAL'},{onConflict:'user_id'}).select().single();
+    if(error) throw error;
+    return data;
+  },onSuccess:()=>qc.invalidateQueries({queryKey:['ai_agent_settings']})});
 }
-
 export function useJobPreferences() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["job_preferences", user?.id],
-    queryFn: async (): Promise<JobPreferences> => {
-      if (!user) return defaultPrefs;
-      const { data } = await supabase.from("job_preferences").select("*").eq("user_id", user.id).maybeSingle();
-      return (data as unknown as JobPreferences) ?? defaultPrefs;
-    },
-    enabled: !!user,
-  });
+  const {user,studentData}=useAuth();
+  return useQuery({queryKey:['job_preferences',user?.id,studentData?.updated_at],enabled:!!user,queryFn:async():Promise<JobPreferences>=>{
+    const {data,error}=await supabase.from('job_preferences').select('*').eq('user_id',user!.id).maybeSingle();
+    if(error) throw error;
+    return data as JobPreferences || {job_types:studentData?.preferred_job_types||[],work_modes:[],locations:studentData?.city?[studentData.city]:[],industries:[],skills:studentData?.skills||[],languages:[],salary_currency:'AED',availability:studentData?.preferred_hours||null};
+  }});
 }
-
 export function useSaveJobPreferences() {
-  const qc = useQueryClient();
-  const { user } = useAuth();
-  return useMutation({
-    mutationFn: async (p: JobPreferences) => {
-      if (!user) throw new Error("Not authenticated");
-      const payload = { ...p, user_id: user.id };
-      const { data, error } = await supabase.from("job_preferences").upsert(payload, { onConflict: "user_id" }).select().single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["job_preferences"] }),
-  });
+  const qc=useQueryClient();const {user}=useAuth();
+  return useMutation({mutationFn:async(preferences:JobPreferences)=>{
+    if(!user) throw new Error('Not authenticated');
+    if(preferences.salary_min!==null&&preferences.salary_min!==undefined&&(!Number.isFinite(preferences.salary_min)||preferences.salary_min<0)) throw new Error('Enter a valid minimum pay.');
+    const {data,error}=await supabase.from('job_preferences').upsert({...preferences,user_id:user.id,salary_currency:'AED'},{onConflict:'user_id'}).select().single();
+    if(error) throw error;return data;
+  },onSuccess:()=>qc.invalidateQueries({queryKey:['job_preferences']})});
 }
-
+async function loadJobTitles(ids:string[]) {
+  if (!ids.length) return new Map<string,{id:string;title:string;company_name:string|null;location:string|null}>();
+  const {data,error}=await supabase.from('jobs').select('id,title,company_name,location').in('id',[...new Set(ids)]);
+  if(error)throw error;
+  return new Map((data||[]).map(job=>[job.id,job]));
+}
 export function useJobMatches() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["ai_job_matches", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data } = await supabase
-        .from("ai_job_matches")
-        .select("*, jobs(*)")
-        .eq("user_id", user.id)
-        .order("score", { ascending: false })
-        .limit(50);
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
+  const {user}=useAuth();
+  return useQuery({queryKey:['ai_job_matches',user?.id],enabled:!!user,queryFn:async()=>{
+    const {data,error}=await supabase.from('ai_job_matches').select('*').eq('user_id',user!.id).order('score',{ascending:false}).limit(50);
+    if(error)throw error;
+    const titles=await loadJobTitles((data||[]).map(match=>match.job_id));
+    return (data||[]).map(match=>({...match,jobs:titles.get(match.job_id)||null}));
+  }});
 }
-
 export function useAgentLogs() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["ai_agent_logs", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data } = await supabase
-        .from("ai_agent_logs")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(30);
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
+  const {user}=useAuth();
+  return useQuery({queryKey:['ai_agent_logs',user?.id],enabled:!!user,queryFn:async()=>{const {data,error}=await supabase.from('ai_agent_logs').select('*').eq('user_id',user!.id).order('created_at',{ascending:false}).limit(100);if(error)throw error;return data||[];}});
 }
-
 export function useDrafts() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["ai_application_drafts", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data } = await supabase
-        .from("ai_application_drafts")
-        .select("*, jobs(*), ai_job_matches!ai_application_drafts_match_id_fkey(score,explanation)")
-        .eq("user_id", user.id)
-        .eq("submitted", false)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
+  const {user}=useAuth();
+  return useQuery({queryKey:['ai_application_drafts',user?.id],enabled:!!user,queryFn:async()=>{
+    const {data,error}=await supabase.from('ai_application_drafts').select('*').eq('user_id',user!.id).eq('submitted',false).order('created_at',{ascending:false}).limit(100);
+    if(error)throw error;
+    const titles=await loadJobTitles((data||[]).map(draft=>draft.job_id));
+    return (data||[]).map(draft=>({...draft,jobs:titles.get(draft.job_id)||null}));
+  }});
 }
-
-async function callHunter(action: string, body: Record<string, unknown> = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-job-hunter?action=${action}`;
-  const r = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
-  const json = await r.json();
-  if (!r.ok) throw new Error(json.error ?? "Request failed");
-  return json;
+async function callHunter(action:string,body:Record<string,unknown>={}) {
+  const {data:{session},error}=await supabase.auth.getSession();
+  if(error||!session?.access_token)throw new Error('Sign in again to use the assistant.');
+  const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-job-hunter?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${session.access_token}`},body:JSON.stringify(body)});
+  const json=await response.json();if(!response.ok)throw new Error(json.error||'Request failed');return json;
 }
-
-export const runJobHunter = () => callHunter("run_user", { limit: 20 });
-export const submitDraft = (draftId: string) => callHunter("apply_draft", { draft_id: draftId });
+export const runJobHunter=()=>callHunter('run_user',{limit:20});
+export const submitDraft=(draftId:string)=>callHunter('apply_draft',{draft_id:draftId});

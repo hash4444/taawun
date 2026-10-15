@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { useApp } from '@/hooks/useApp';
-import { Zap, ShieldCheck, Globe2, Sparkle } from 'lucide-react';
+import { FileText, CalendarDays, ClipboardCheck, Sparkle } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 interface OnboardingDesktopFrameProps {
@@ -20,9 +20,9 @@ export function OnboardingDesktopFrame({ children, topAction }: OnboardingDeskto
   const { t, isRTL } = useApp();
 
   const benefits = [
-    { icon: Zap, label: t('benefit1') },
-    { icon: ShieldCheck, label: t('benefit2') },
-    { icon: Globe2, label: t('benefit3') },
+    { icon: FileText, label: t('benefit1') },
+    { icon: CalendarDays, label: t('benefit2') },
+    { icon: ClipboardCheck, label: t('benefit3') },
   ];
 
   return (
@@ -76,7 +76,7 @@ export function OnboardingDesktopFrame({ children, topAction }: OnboardingDeskto
           <div className="flex items-center gap-2 mb-7 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm">
             <Sparkle size={13} className="text-primary-foreground/90" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-primary-foreground/90">
-              {isRTL ? 'سوق العمل الجديد' : 'The new way to work'}
+              {isRTL ? 'التعليم يلتقي بالفرص' : 'Education meets opportunity'}
             </span>
           </div>
 

@@ -34,8 +34,10 @@ export function PageHeader({ title, subtitle, showBack, backPath, onBack, action
     <div className={cn('px-4 pt-5 sm:pt-6 pb-4', className)}>
       {showBack && (
         <button
+          type="button"
+          aria-label={isRTL ? 'رجوع' : 'Back'}
           onClick={handleBack}
-          className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full hover:bg-muted transition-colors mb-1"
+          className="flex items-center justify-center w-10 h-10 -ms-2 rounded-full hover:bg-muted transition-colors mb-1"
         >
           <BackIcon size={24} />
         </button>
@@ -45,7 +47,7 @@ export function PageHeader({ title, subtitle, showBack, backPath, onBack, action
         <div className="flex-1 min-w-0">
           <h1 className="text-[22px] sm:text-[24px] font-semibold text-foreground leading-tight">{title}</h1>
           {subtitle && (
-            <p className="text-base text-muted-foreground/80 mt-2">{subtitle}</p>
+            <p className="text-base text-muted-foreground mt-2">{subtitle}</p>
           )}
         </div>
         

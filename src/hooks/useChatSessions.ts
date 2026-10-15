@@ -7,6 +7,11 @@ type ChatSessionRow = Database['public']['Tables']['chat_sessions']['Row'];
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
+export function decodeSession(s: ChatSessionRow): ChatSession {
+  const messages = Array.isArray(s.messages) ? s.messages.filter((m): m is { role: 'user' | 'assistant'; content: string } => !!m && typeof m === 'object' && !Array.isArray(m) && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string') : [];
+  return { ...s, title: s.title || 'New chat', is_pinned: !!s.is_pinned, is_archived: !!s.is_archived, messages, metadata: s.metadata && typeof s.metadata === 'object' && !Array.isArray(s.metadata) ? s.metadata : {} };
+}
+
 export interface ChatSession {
   id: string;
   user_id: string;
@@ -26,31 +31,29 @@ export function useChatSessions() {
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
 
   const fetchSessions = useCallback(async () => {
-    const effectiveUserId = user?.id || 'e0af6d3d-4223-4017-b344-8a9689473d8f';
+    if (!user) { setSessions([]); setActiveSessionId(null); return; }
+    const effectiveUserId = user.id;
     setIsLoadingSessions(true);
     const { data, error } = await supabase
       .from('chat_sessions')
       .select('*')
       .eq('user_id', effectiveUserId)
       .order('is_pinned', { ascending: false })
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false }).limit(50);
 
     if (error) {
       console.error('Failed to fetch sessions:', error);
     } else {
-      setSessions((data || []).map((s: ChatSessionRow) => ({
-        ...s,
-        messages: Array.isArray(s.messages) ? s.messages : [],
-        metadata: s.metadata && typeof s.metadata === 'object' && !Array.isArray(s.metadata) ? s.metadata : {},
-      })));
+      setSessions((data || []).map(decodeSession));
     }
     setIsLoadingSessions(false);
-  }, [user?.id]);
+  }, [user]);
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
   const createSession = useCallback(async (firstMessage?: Message): Promise<string | null> => {
-    const effectiveUserId = user?.id || 'e0af6d3d-4223-4017-b344-8a9689473d8f';
+    if (!user) throw new Error('Sign in before starting a chat.');
+    const effectiveUserId = user.id;
     const messages = firstMessage ? [firstMessage] : [];
     const { data, error } = await supabase
       .from('chat_sessions')
@@ -70,7 +73,7 @@ export function useChatSessions() {
     setSessions(prev => [session, ...prev]);
     setActiveSessionId(session.id);
     return session.id;
-  }, [user?.id]);
+  }, [user]);
 
   const updateSessionMessages = useCallback(async (sessionId: string, messages: Message[]) => {
     const { error } = await supabase
