@@ -1,5 +1,8 @@
 name: Marketplace quality
 on:
+  push:
+    branches:
+      - codex/student-marketplace
   pull_request:
   workflow_dispatch:
 permissions:
