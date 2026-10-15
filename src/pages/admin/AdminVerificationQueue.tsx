@@ -17,7 +17,7 @@ interface PendingItem {
 export default function AdminVerificationQueue() {
   const { isRTL } = useApp();
   const navigate = useNavigate();
-  const { data, isLoading } = usePendingVerifications();
+  const { data, isLoading, error, refetch } = usePendingVerifications();
 
   const allPending: PendingItem[] = [
     ...(data?.workers || []).map(w => ({ ...w, type: 'worker' as const }) as unknown as PendingItem),
@@ -28,7 +28,7 @@ export default function AdminVerificationQueue() {
     <div className="min-h-screen bg-background">
       <AdminHeader title={isRTL ? 'طلبات التحقق' : 'Verification Queue'} showBack backPath="/admin" />
       <div className="px-4 py-4">
-        {isLoading ? (
+        {error ? <div role="alert" className="space-y-3"><p>{isRTL ? 'تعذر تحميل طلبات التحقق' : 'Could not load verification requests'}</p><button className="text-primary underline" onClick={() => void refetch()}>{isRTL ? 'إعادة المحاولة' : 'Retry'}</button></div> : isLoading ? (
           <div className="space-y-3">{[1, 2].map(i => <div key={i} className="h-24 bg-muted rounded-xl animate-pulse" />)}</div>
         ) : allPending.length === 0 ? (
           <p className="text-center text-muted-foreground py-12">{isRTL ? 'لا توجد طلبات معلقة' : 'No pending requests'}</p>
@@ -47,7 +47,7 @@ export default function AdminVerificationQueue() {
                     </div>
                     <div>
                       <p className="font-medium">{item.profiles?.full_name || item.profiles?.email}</p>
-                      <p className="text-caption text-muted-foreground">{item.type === 'worker' ? (isRTL ? 'عامل' : 'Worker') : (isRTL ? 'منشأة' : 'Business')}</p>
+                      <p className="text-caption text-muted-foreground">{item.type === 'worker' ? (isRTL ? 'طالب / خريج' : 'Student / Graduate') : (isRTL ? 'منشأة' : 'Business')}</p>
                     </div>
                   </div>
                   <ChevronRight size={20} className="text-muted-foreground" />

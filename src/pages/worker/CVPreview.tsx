@@ -1,283 +1,82 @@
-import { useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useApp } from '@/hooks/useApp';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { WorkerDesktopShell } from '@/components/layout/WorkerDesktopShell';
 import { Button } from '@/components/ui/button';
-import { useCVRecords, CVRecord } from '@/hooks/useCV';
-import { Download, Mail, Phone, MapPin, Linkedin, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useCVRecords } from '@/hooks/useCV';
+import { cvPDFSlices, privateCVPath } from '@/lib/cv';
 import { toast } from '@/hooks/use-toast';
 
 export default function CVPreview() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const { isRTL } = useApp();
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const cvRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-
-  const { data: cvs } = useCVRecords();
-  const cv = cvs?.find(c => c.id === id);
-
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileError, setFileError] = useState(false);
+  const [fileRetry, setFileRetry] = useState(0);
+  const { data: cvs, isLoading, error, refetch } = useCVRecords();
+  const cv = cvs?.find(record => record.id === id);
+  useEffect(() => {
+    let cancelled = false;
+    setFileUrl(null); setFileError(false);
+    if (cv?.file_url) {
+      let path: string;
+      try { path = privateCVPath(cv.file_url, user?.id || ''); } catch { setFileError(true); return; }
+      supabase.storage.from('cv_files').createSignedUrl(path, 300).then(({ data, error }) => {
+        if (!cancelled) { setFileUrl(data?.signedUrl || null); setFileError(!!error || !data?.signedUrl); }
+      }).catch(() => { if (!cancelled) setFileError(true); });
+    }
+    return () => { cancelled = true; };
+  }, [cv?.file_url, user?.id, fileRetry]);
   const handleDownload = async () => {
     if (!cvRef.current || !cv) return;
     setDownloading(true);
     try {
       const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).default;
-
-      const canvas = await html2canvas(cvRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
+      const JsPDF = (await import('jspdf')).default;
+      const canvas = await html2canvas(cvRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const pdf = new JsPDF('p', 'mm', 'a4');
+      const pages = cvPDFSlices(canvas.width, canvas.height, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+      pages.forEach((page, index) => {
+        if (index) pdf.addPage();
+        const slice = document.createElement('canvas'); slice.width = canvas.width; slice.height = page.sourceHeight;
+        const context = slice.getContext('2d'); if (!context) throw new Error('PDF rendering is unavailable.');
+        context.drawImage(canvas, 0, page.sourceY, canvas.width, page.sourceHeight, 0, 0, canvas.width, page.sourceHeight);
+        pdf.addImage(slice.toDataURL('image/png'), 'PNG', 10, 10, page.widthMm, page.heightMm);
       });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${cv.personal_info?.fullName || 'CV'}.pdf`);
-      toast({ title: isRTL ? 'تم التحميل' : 'PDF Downloaded!' });
-    } catch {
-      toast({ title: isRTL ? 'خطأ' : 'Error', variant: 'destructive' });
-    } finally {
-      setDownloading(false);
-    }
+      pdf.save(`${(cv.personal_info?.fullName || 'CV').replace(/[\\/:*?"<>|]/g, '')}.pdf`);
+      toast({ title: isRTL ? 'تم تنزيل ملف PDF' : 'PDF downloaded' });
+    } catch { toast({ title: isRTL ? 'تعذر إنشاء ملف PDF' : 'Could not create the PDF', variant: 'destructive' }); }
+    finally { setDownloading(false); }
   };
-
-  // If CV has an uploaded file, show the file directly
-  if (!cv) {
-    if (!isMobile) {
-      return (
-        <WorkerDesktopShell>
-          <div className="max-w-3xl mx-auto text-center py-16">
-            <h1 className="text-page-title text-foreground mb-2">CV</h1>
-            <p className="text-muted-foreground">{isRTL ? 'السيرة غير موجودة' : 'CV not found'}</p>
-          </div>
-        </WorkerDesktopShell>
-      );
-    }
-    return (
-      <MobileLayout header={<PageHeader title="CV" showBack />}>
-        <div className="text-center py-16">
-          <p className="text-muted-foreground">{isRTL ? 'السيرة غير موجودة' : 'CV not found'}</p>
-        </div>
-      </MobileLayout>
-    );
-  }
-
+  const frame = (content: ReactNode) => isMobile
+    ? <MobileLayout header={<PageHeader title={isRTL ? 'السيرة الذاتية' : 'CV'} showBack />}><div className="py-4">{content}</div></MobileLayout>
+    : <WorkerDesktopShell><div className="max-w-3xl mx-auto space-y-4">{content}</div></WorkerDesktopShell>;
+  if (isLoading) return frame(<p role="status">{isRTL ? 'جارٍ تحميل السيرة الذاتية…' : 'Loading CV…'}</p>);
+  if (error) return frame(<div role="alert" className="space-y-3"><p>{isRTL ? 'تعذر تحميل السيرة الذاتية.' : 'Could not load your CV.'}</p><Button onClick={() => void refetch()}>{isRTL ? 'إعادة المحاولة' : 'Retry'}</Button></div>);
+  if (!cv) return frame(<p>{isRTL ? 'السيرة الذاتية غير موجودة' : 'CV not found'}</p>);
   if (cv.file_url) {
-    const downloadButton = (
-      <Button size="sm" asChild>
-        <a href={cv.file_url} target="_blank" rel="noopener noreferrer" download>
-          <Download size={14} className="me-1" />
-          {isRTL ? 'تحميل' : 'Download'}
-        </a>
-      </Button>
-    );
-
-    if (!isMobile) {
-      return (
-        <WorkerDesktopShell>
-          <div className="max-w-3xl mx-auto space-y-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-page-title text-foreground">
-                {isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
-              </h1>
-              {downloadButton}
-            </div>
-            <div className="card-elevated overflow-hidden">
-              <iframe
-                src={cv.file_url}
-                className="w-full h-[calc(100vh-14rem)] border-0"
-                title={cv.title}
-              />
-            </div>
-          </div>
-        </WorkerDesktopShell>
-      );
-    }
-
-    return (
-      <MobileLayout
-        header={
-          <PageHeader
-            title={isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
-            showBack
-            action={downloadButton}
-          />
-        }
-        noPadding
-      >
-        <div className="flex-1 w-full h-full">
-          <iframe
-            src={cv.file_url}
-            className="w-full h-[calc(100vh-120px)] border-0"
-            title={cv.title}
-          />
-        </div>
-      </MobileLayout>
-    );
+    if (!fileUrl) return frame(fileError ? <div role="alert" className="space-y-3"><p>{isRTL ? 'تعذر فتح الملف الخاص.' : 'Could not open this private file.'}</p><Button onClick={() => setFileRetry(value => value + 1)}>{isRTL ? 'إعادة المحاولة' : 'Retry'}</Button></div> : <p role="status">{isRTL ? 'جارٍ فتح الملف الخاص…' : 'Opening private file…'}</p>);
+    const pdfFile = /\.pdf(?:$|[?#])/i.test(cv.file_url);
+    return frame(<div className="space-y-4"><h1 className="text-xl font-bold">{cv.title}</h1><div className="flex flex-wrap gap-3"><Button asChild><a href={fileUrl} target="_blank" rel="noopener noreferrer" download>{isRTL ? 'فتح / تحميل الملف الخاص' : 'Open / download private file'}</a></Button><Button variant="outline" onClick={() => setFileRetry(value => value + 1)}>{isRTL ? 'تحديث رابط الوصول' : 'Refresh access link'}</Button></div>{pdfFile ? <iframe src={fileUrl} title={cv.title} className="w-full h-[70vh] border rounded-xl" /> : <p className="text-muted-foreground">{isRTL ? 'لا تتوفر معاينة ملفات Word داخل المتصفح. حمّل الملف وافتحه في تطبيق المستندات.' : 'Word files cannot be previewed here. Download the file and open it in your document app.'}</p>}</div>);
   }
-
-  const p = cv.personal_info || {};
-
-  const downloadButton = (
-    <Button size="sm" onClick={handleDownload} disabled={downloading}>
-      {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} className="me-1" />}
-      PDF
-    </Button>
-  );
-
-  const cvDocument = (
-        <div ref={cvRef} className="bg-white p-8 rounded-xl shadow-sm max-w-[210mm] mx-auto" style={{ fontFamily: 'Inter, sans-serif', color: '#1a1a2e' }}>
-          {/* Header */}
-          <div style={{ borderBottom: '3px solid hsl(168, 84%, 32%)', paddingBottom: '16px', marginBottom: '20px' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: '700', margin: 0 }}>{p.fullName || 'Your Name'}</h1>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '8px', fontSize: '13px', color: '#64748b' }}>
-              {p.email && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  ✉ {p.email}
-                </span>
-              )}
-              {p.phone && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  ☎ {p.phone}
-                </span>
-              )}
-              {(p.city || p.country) && (
-                <span>📍 {[p.city, p.country].filter(Boolean).join(', ')}</span>
-              )}
-              {p.linkedIn && (
-                <span>🔗 LinkedIn</span>
-              )}
-            </div>
-          </div>
-
-          {/* Summary */}
-          {cv.summary && (
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'hsl(168, 84%, 32%)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Professional Summary
-              </h2>
-              <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#374151' }}>{cv.summary}</p>
-            </div>
-          )}
-
-          {/* Experience */}
-          {cv.experience?.length > 0 && cv.experience.some(e => e.title || e.company) && (
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'hsl(168, 84%, 32%)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Experience
-              </h2>
-              {cv.experience.filter(e => e.title || e.company).map((exp, i) => (
-                <div key={i} style={{ marginBottom: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '600', margin: 0 }}>{exp.title}</h3>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>
-                      {exp.startDate} — {exp.current ? 'Present' : exp.endDate}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '13px', color: '#64748b', margin: '2px 0' }}>{exp.company}</p>
-                  {exp.description && (
-                    <p style={{ fontSize: '13px', lineHeight: '1.5', color: '#374151', marginTop: '4px' }}>{exp.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Education */}
-          {cv.education?.length > 0 && cv.education.some(e => e.institution) && (
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'hsl(168, 84%, 32%)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Education
-              </h2>
-              {cv.education.filter(e => e.institution).map((edu, i) => (
-                <div key={i} style={{ marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '600', margin: 0 }}>
-                      {edu.degree} {edu.field && `in ${edu.field}`}
-                    </h3>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>
-                      {edu.startYear} — {edu.endYear}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '13px', color: '#64748b', margin: '2px 0' }}>{edu.institution}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Skills */}
-          {cv.skills?.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'hsl(168, 84%, 32%)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Skills
-              </h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {cv.skills.map((skill, i) => (
-                  <span key={i} style={{ padding: '4px 12px', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '20px', fontSize: '13px', color: '#0d9488' }}>
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Languages */}
-          {cv.languages?.length > 0 && cv.languages.some(l => l.name) && (
-            <div>
-              <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'hsl(168, 84%, 32%)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Languages
-              </h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                {cv.languages.filter(l => l.name).map((lang, i) => (
-                  <span key={i} style={{ fontSize: '13px' }}>
-                    <strong>{lang.name}</strong> — {lang.level}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-  );
-
-  if (!isMobile) {
-    return (
-      <WorkerDesktopShell>
-        <div className="max-w-3xl mx-auto space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-page-title text-foreground">
-              {isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
-            </h1>
-            {downloadButton}
-          </div>
-          {cvDocument}
-        </div>
-      </WorkerDesktopShell>
-    );
-  }
-
-  return (
-    <MobileLayout
-      header={
-        <PageHeader
-          title={isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}
-          showBack
-          action={downloadButton}
-        />
-      }
-      noPadding
-    >
-      <div className="p-4 overflow-y-auto pb-8">
-        {cvDocument}
-      </div>
-    </MobileLayout>
-  );
+  const info = cv.personal_info || {};
+  const section = (title: string, body: ReactNode) => <section style={{ marginTop: 22 }}><h2 style={{ fontSize: 16, fontWeight: 700, color: '#087f6a', marginBottom: 10 }}>{title}</h2>{body}</section>;
+  const cvDocument = <div ref={cvRef} dir={isRTL ? 'rtl' : 'ltr'} style={{ background: '#ffffff', color: '#111827', padding: 32, fontFamily: 'Arial, sans-serif', fontSize: 14, lineHeight: 1.6, overflowWrap: 'anywhere' }}>
+    <header style={{ borderBottom: '2px solid #087f6a', paddingBottom: 16 }}><h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>{info.fullName}</h1><p>{[info.email, info.phone].filter(Boolean).join(' · ')}</p><p>{[info.city, info.country].filter(Boolean).join(', ')}</p>{info.linkedIn && <p>{info.linkedIn}</p>}</header>
+    {cv.summary && section(isRTL ? 'الملخص المهني' : 'Professional summary', <p style={{ whiteSpace: 'pre-line' }}>{cv.summary}</p>)}
+    {cv.experience?.some(item => item.title || item.company || item.description) && section(isRTL ? 'الخبرة' : 'Experience', cv.experience.filter(item => item.title || item.company || item.description).map((item, index) => <div key={index} style={{ marginBottom: 14 }}><h3 style={{ fontWeight: 700 }}>{[item.title, item.company].filter(Boolean).join(' · ')}</h3><p style={{ color: '#4b5563', fontSize: 12 }}>{[item.startDate, item.current ? (isRTL ? 'حالياً' : 'Present') : item.endDate].filter(Boolean).join(' — ')}</p><p style={{ whiteSpace: 'pre-line' }}>{item.description}</p></div>))}
+    {cv.education?.some(item => item.institution || item.degree || item.field) && section(isRTL ? 'التعليم' : 'Education', cv.education.filter(item => item.institution || item.degree || item.field).map((item, index) => <div key={index} style={{ marginBottom: 14 }}><h3 style={{ fontWeight: 700 }}>{[item.degree, item.field].filter(Boolean).join(' · ')}</h3><p>{item.institution}</p><p style={{ color: '#4b5563', fontSize: 12 }}>{[item.startYear, item.endYear].filter(Boolean).join(' — ')}</p></div>))}
+    {!!cv.skills?.length && section(isRTL ? 'المهارات' : 'Skills', <p>{cv.skills.join(' · ')}</p>)}
+    {cv.languages?.some(item => item.name) && section(isRTL ? 'اللغات' : 'Languages', <p>{cv.languages.filter(item => item.name).map(item => `${item.name}${item.level ? ` (${item.level})` : ''}`).join(' · ')}</p>)}
+  </div>;
+  return frame(<div className="space-y-4"><div className="flex justify-between gap-3"><h1 className="text-xl font-bold">{isRTL ? 'معاينة السيرة الذاتية' : 'CV Preview'}</h1><Button onClick={() => void handleDownload()} disabled={downloading}>{downloading ? (isRTL ? 'جارٍ التصدير…' : 'Exporting…') : (isRTL ? 'تنزيل PDF' : 'Download PDF')}</Button></div>{cvDocument}</div>);
 }

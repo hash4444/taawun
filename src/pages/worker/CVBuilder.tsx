@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Plus, Trash2, ChevronRight, ChevronLeft, Loader2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { draftCVSummary } from '@/lib/cv';
 
 const STEPS = [
   { en: 'Personal Info', ar: 'المعلومات الشخصية' },
@@ -26,20 +26,19 @@ const STEPS = [
 
 export default function CVBuilder() {
   const { isRTL } = useApp();
-  const { profile } = useAuth();
+  const { profile, studentData } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const saveCV = useSaveCV();
 
   const [step, setStep] = useState(0);
-  const [aiLoading, setAiLoading] = useState(false);
 
   const [personalInfo, setPersonalInfo] = useState<CVPersonalInfo>({
     fullName: profile?.full_name || '',
     email: profile?.email || '',
     phone: profile?.phone || '',
-    city: '',
-    country: '',
+    city: studentData?.city || profile?.city || '',
+    country: profile?.country || 'AE',
     linkedIn: '',
   });
 
@@ -48,10 +47,10 @@ export default function CVBuilder() {
   ]);
 
   const [education, setEducation] = useState<CVEducation[]>([
-    { institution: '', degree: '', field: '', startYear: '', endYear: '' },
+    { institution: studentData?.university || '', degree: '', field: studentData?.degree || '', startYear: '', endYear: studentData?.graduation_year?.toString() || '' },
   ]);
 
-  const [skills, setSkills] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>(studentData?.skills || []);
   const [skillInput, setSkillInput] = useState('');
   const [languages, setLanguages] = useState<CVLanguage[]>([
     { name: '', level: 'Intermediate' },
@@ -74,32 +73,24 @@ export default function CVBuilder() {
   const addLanguage = () => setLanguages(prev => [...prev, { name: '', level: 'Intermediate' }]);
   const removeLanguage = (i: number) => setLanguages(prev => prev.filter((_, idx) => idx !== i));
 
-  const generateSummaryWithAI = async () => {
-    setAiLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('cv-ai-summary', {
-        body: { personalInfo, experience, education, skills, languages },
-      });
-      if (error) throw error;
-      if (data?.summary) setSummary(data.summary);
-    } catch (e) {
-      toast({ title: isRTL ? 'خطأ' : 'Error', description: isRTL ? 'فشل في إنشاء الملخص' : 'Failed to generate summary', variant: 'destructive' });
-    } finally {
-      setAiLoading(false);
-    }
+  const generateDraftSummary = () => {
+    const draft = draftCVSummary({ education, experience, skills }, isRTL ? 'ar' : 'en');
+    if (!draft) { toast({ title: isRTL ? 'أضف تعليمك أو خبرتك أو مهاراتك أولاً' : 'Add education, experience or skills first' }); return; }
+    setSummary(draft);
   };
 
   const handleSave = () => {
+    if (!personalInfo.fullName?.trim()) { toast({ title: isRTL ? 'أدخل اسمك الكامل أولاً' : 'Enter your full name first', variant: 'destructive' }); return; }
     saveCV.mutate(
       {
         title: personalInfo.fullName ? `${personalInfo.fullName}'s CV` : 'My CV',
         personal_info: personalInfo,
-        education,
-        experience,
+        education: education.filter(item => item.institution || item.degree || item.field),
+        experience: experience.filter(item => item.title || item.company || item.description),
         skills,
-        languages,
+        languages: languages.filter(item => item.name.trim()),
         summary,
-        is_ai_generated: true,
+        is_ai_generated: false,
         file_url: null,
       },
       {
@@ -324,16 +315,16 @@ export default function CVBuilder() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label>{isRTL ? 'الملخص المهني' : 'Professional Summary'}</Label>
-              <Button size="sm" variant="outline" onClick={generateSummaryWithAI} disabled={aiLoading}>
-                {aiLoading ? <Loader2 size={14} className="me-1 animate-spin" /> : <Sparkles size={14} className="me-1" />}
-                {isRTL ? 'إنشاء بالذكاء الاصطناعي' : 'AI Generate'}
+              <Button size="sm" variant="outline" onClick={generateDraftSummary}>
+                <FileText size={14} className="me-1" />
+                {isRTL ? 'مسودة ملخص' : 'Draft summary'}
               </Button>
             </div>
             <Textarea
               value={summary}
               onChange={e => setSummary(e.target.value)}
               rows={6}
-              placeholder={isRTL ? 'اكتب ملخصاً عن نفسك أو اضغط "إنشاء بالذكاء الاصطناعي"' : 'Write a summary or click "AI Generate"'}
+              placeholder={isRTL ? 'اكتب ملخصاً دقيقاً أو أنشئ مسودة من بياناتك المدخلة.' : 'Write an accurate summary or draft one from your entered details.'}
             />
           </div>
         )}

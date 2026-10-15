@@ -130,6 +130,9 @@ export function useUploadKYCDocument() {
         throw new Error(validation.error);
       }
       
+      if (profile.role !== 'worker' && profile.role !== 'business') throw new Error('A student or business account is required.');
+      const allowed = profile.role === 'worker' ? ['id_front', 'id_back', 'selfie'] : ['commercial_reg', 'license', 'rep_id'];
+      if (!allowed.includes(docType)) throw new Error('This document type does not belong to your account.');
       const bucket = profile.role === 'worker' ? 'kyc_worker' : 'kyb_business';
       const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const filePath = `${user.id}/${docType}_${Date.now()}.${fileExt}`;
@@ -157,7 +160,7 @@ export function useUploadKYCDocument() {
         .from('kyc_documents')
         .insert({
           owner_id: user.id,
-          owner_role: (profile.role || 'worker') as 'admin' | 'business' | 'worker',
+          owner_role: profile.role,
           doc_type: docType,
           storage_path: `${bucket}/${filePath}`,
           status: 'submitted',
@@ -174,29 +177,14 @@ export function useUploadKYCDocument() {
   });
 }
 
-// Submit for verification (update status to pending_review)
+// The server checks the complete document set and owns verification transitions.
 export function useSubmitForVerification() {
   const queryClient = useQueryClient();
-  const { user, profile, refreshProfile } = useAuth();
-  
+  const { refreshProfile } = useAuth();
   return useMutation({
     mutationFn: async () => {
-      if (!user || !profile) throw new Error('Not authenticated');
-      
-      // Update worker or business verification status
-      if (profile.role === 'worker') {
-        const { error } = await supabase
-          .from('workers')
-          .update({ verification_status: 'pending_review' })
-          .eq('id', user.id);
-        if (error) throw error;
-      } else if (profile.role === 'business') {
-        const { error } = await supabase
-          .from('businesses')
-          .update({ verification_status: 'pending_review' })
-          .eq('id', user.id);
-        if (error) throw error;
-      }
+      const { error } = await supabase.rpc('request_verification');
+      if (error) throw error;
     },
     onSuccess: async () => {
       await refreshProfile();
@@ -204,297 +192,58 @@ export function useSubmitForVerification() {
     },
   });
 }
-
-// Admin: Fetch all pending verification requests (only those with submitted documents)
+// Include submitted documents, requested review and legacy approvals lacking review evidence.
 export function usePendingVerifications() {
+  const { isAdmin } = useAuth();
   return useQuery({
     queryKey: ['verifications', 'pending'],
+    enabled: isAdmin,
     queryFn: async () => {
-      // First, get all users who have at least one document with 'submitted' status
-      const { data: pendingDocs, error: docsError } = await supabase
-        .from('kyc_documents')
-        .select('owner_id, owner_role')
-        .eq('status', 'submitted');
-
-      if (docsError) throw docsError;
-
-      // Get unique user IDs with pending documents
-      const workerIds = [...new Set(
-        pendingDocs?.filter(d => d.owner_role === 'worker').map(d => d.owner_id) || []
-      )];
-      const businessIds = [...new Set(
-        pendingDocs?.filter(d => d.owner_role === 'business').map(d => d.owner_id) || []
-      )];
-
-      // Fetch workers with pending documents
-      let workers: Record<string, unknown>[] = [];
-      if (workerIds.length > 0) {
-        const { data, error } = await supabase
-          .from('workers')
-          .select(`
-            *,
-            profiles:profiles!workers_id_fkey (
-              id,
-              email,
-              full_name,
-              phone
-            )
-          `)
-          .in('id', workerIds);
-
-        if (error) throw error;
-        workers = data || [];
-      }
-
-      // Fetch businesses with pending documents
-      let businesses: Record<string, unknown>[] = [];
-      if (businessIds.length > 0) {
-        const { data, error } = await supabase
-          .from('businesses')
-          .select(`
-            *,
-            profiles:profiles!businesses_id_fkey (
-              id,
-              email,
-              full_name,
-              phone
-            )
-          `)
-          .in('id', businessIds);
-
-        if (error) throw error;
-        businesses = data || [];
-      }
-
-      return {
-        workers,
-        businesses,
+      const { data: docs, error } = await supabase.from('kyc_documents').select('owner_id, owner_role').eq('status', 'submitted');
+      if (error) throw error;
+      const filter = (role: 'worker' | 'business') => {
+        const ids = [...new Set((docs || []).filter(doc => doc.owner_role === role).map(doc => doc.owner_id))];
+        const states = 'verification_status.eq.pending_review,and(verification_status.eq.verified,verification_reviewed_at.is.null),and(verification_status.eq.verified,verification_reviewed_by.is.null)';
+        return ids.length ? states + ',id.in.(' + ids.join(',') + ')' : states;
       };
+      const [workers, businesses] = await Promise.all([
+        supabase.from('workers').select('*, profiles:profiles!workers_id_fkey(id,email,full_name,phone)').or(filter('worker')),
+        supabase.from('businesses').select('*, profiles:profiles!businesses_id_fkey(id,email,full_name,phone)').or(filter('business')),
+      ]);
+      if (workers.error) throw workers.error;
+      if (businesses.error) throw businesses.error;
+      return { workers: workers.data as unknown as Record<string, unknown>[], businesses: businesses.data as unknown as Record<string, unknown>[] };
     },
   });
 }
 
-// Admin: Approve/Reject verification
+// Administrative review is atomic and authorized in the database.
 export function useUpdateVerificationStatus() {
   const queryClient = useQueryClient();
-  
   return useMutation({
-    mutationFn: async ({ 
-      userId, 
-      role, 
-      status,
-      adminId,
-      notes,
-    }: { 
-      userId: string; 
-      role: 'worker' | 'business';
-      status: 'verified' | 'rejected';
-      adminId: string;
-      notes?: string;
+    mutationFn: async ({ userId, role, status, notes }: {
+      userId: string; role: 'worker' | 'business'; status: 'verified' | 'rejected'; adminId: string; notes?: string;
     }) => {
-      // Update verification status
-      if (role === 'worker') {
-        const { error } = await supabase
-          .from('workers')
-          .update({ verification_status: status })
-          .eq('id', userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('businesses')
-          .update({ verification_status: status })
-          .eq('id', userId);
-        if (error) throw error;
-      }
-
-      // Log admin action
-      const { error: actionError } = await supabase
-        .from('admin_actions')
-        .insert({
-          admin_id: adminId,
-          target_type: role,
-          target_id: userId,
-          action: status === 'verified' ? 'approve_verification' : 'reject_verification',
-          notes,
-        });
-
-      if (actionError) throw actionError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['verifications'] });
-    },
-  });
-}
-
-// Admin: Reject a specific document and send email
-export function useRejectDocument() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ 
-      documentId,
-      userId,
-      docType,
-      userRole,
-      adminId,
-      rejectionReason,
-    }: { 
-      documentId: string;
-      userId: string;
-      docType: string;
-      userRole: 'worker' | 'business';
-      adminId: string;
-      rejectionReason?: string;
-    }) => {
-      // Update document status to rejected
-      const { error: docError } = await supabase
-        .from('kyc_documents')
-        .update({ 
-          status: 'rejected',
-          rejection_reason: rejectionReason,
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: adminId,
-        })
-        .eq('id', documentId);
-
-      if (docError) throw docError;
-
-      // Log admin action
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_id: adminId,
-          target_type: 'document',
-          target_id: documentId,
-          action: 'reject_document',
-          notes: rejectionReason,
-        });
-
-      // Send rejection email via edge function
-      const { error: emailError } = await supabase.functions.invoke('send-verification-email', {
-        body: {
-          userId,
-          documentType: docType,
-          userRole,
-          action: 'rejected',
-          rejectionReason,
-        },
+      const { error } = await supabase.rpc('review_verification', {
+        p_user_id: userId, p_role: role, p_status: status, p_notes: notes || null,
       });
-
-      if (emailError) {
-        console.error('Failed to send rejection email:', emailError);
-        // Don't throw - document was rejected, email is secondary
-      }
+      if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kyc_documents'] });
-      queryClient.invalidateQueries({ queryKey: ['verifications'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['verifications'] }),
   });
 }
 
-// Required documents per role
-const REQUIRED_DOCS: Record<'worker' | 'business', string[]> = {
-  worker: ['id_front', 'id_back', 'selfie'],
-  business: ['commercial_reg', 'license', 'rep_id'],
+type DocumentReview = {
+  documentId: string; userId: string; docType: string; userRole: 'worker' | 'business'; adminId: string; rejectionReason?: string;
 };
-
-// Admin: Approve a specific document
-export function useApproveDocument() {
+function useReviewDocument(status: 'approved' | 'rejected') {
   const queryClient = useQueryClient();
-  
   return useMutation({
-    mutationFn: async ({ 
-      documentId,
-      userId,
-      docType,
-      userRole,
-      adminId,
-    }: { 
-      documentId: string;
-      userId: string;
-      docType: string;
-      userRole: 'worker' | 'business';
-      adminId: string;
-    }) => {
-      // Update document status to approved
-      const { error: docError } = await supabase
-        .from('kyc_documents')
-        .update({ 
-          status: 'approved',
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: adminId,
-        })
-        .eq('id', documentId);
-
-      if (docError) throw docError;
-
-      // Log admin action
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_id: adminId,
-          target_type: 'document',
-          target_id: documentId,
-          action: 'approve_document',
-        });
-
-      // Check if ALL required documents are now approved for this user
-      const { data: allDocs, error: docsError } = await supabase
-        .from('kyc_documents')
-        .select('doc_type, status')
-        .eq('owner_id', userId);
-
-      if (docsError) throw docsError;
-
-      const requiredDocs = REQUIRED_DOCS[userRole];
-      const allApproved = requiredDocs.every(reqDoc => 
-        allDocs?.some(d => d.doc_type === reqDoc && d.status === 'approved')
-      );
-
-      // If all required documents are approved, update the user's verification status
-      if (allApproved) {
-        if (userRole === 'worker') {
-          const { error: updateError } = await supabase
-            .from('workers')
-            .update({ verification_status: 'verified' })
-            .eq('id', userId);
-          if (updateError) throw updateError;
-        } else {
-          const { error: updateError } = await supabase
-            .from('businesses')
-            .update({ verification_status: 'verified' })
-            .eq('id', userId);
-          if (updateError) throw updateError;
-        }
-
-        // Log the verification approval
-        await supabase
-          .from('admin_actions')
-          .insert({
-            admin_id: adminId,
-            target_type: userRole,
-            target_id: userId,
-            action: 'approve_verification',
-            notes: 'Auto-verified after all documents approved',
-          });
-      }
-
-      // Send approval email via edge function
-      const { error: emailError } = await supabase.functions.invoke('send-verification-email', {
-        body: {
-          userId,
-          documentType: docType,
-          userRole,
-          action: 'approved',
-          allDocsApproved: allApproved,
-        },
+    mutationFn: async ({ documentId, rejectionReason }: DocumentReview) => {
+      const { error } = await supabase.rpc('review_verification_document', {
+        p_document_id: documentId, p_status: status, p_reason: rejectionReason || null,
       });
-
-      if (emailError) {
-        console.error('Failed to send approval email:', emailError);
-        // Don't throw - document was approved, email is secondary
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kyc_documents'] });
@@ -502,7 +251,8 @@ export function useApproveDocument() {
     },
   });
 }
-
+export function useRejectDocument() { return useReviewDocument('rejected'); }
+export function useApproveDocument() { return useReviewDocument('approved'); }
 // Fetch documents for a specific user (admin use)
 export function useUserDocuments(userId: string | undefined) {
   return useQuery({

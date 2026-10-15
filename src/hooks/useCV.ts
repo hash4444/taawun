@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { privateCVPath } from '@/lib/cv';
 import type { Json } from '@/integrations/supabase/types';
 
 export interface CVPersonalInfo {
@@ -76,6 +77,7 @@ export function useSaveCV() {
   return useMutation({
     mutationFn: async (cv: Omit<CVRecord, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id?: string }) => {
       if (!user) throw new Error('Not authenticated');
+      const filePath = cv.file_url ? privateCVPath(cv.file_url, user.id) : null;
 
       if (cv.id) {
         const { data, error } = await supabase
@@ -89,6 +91,7 @@ export function useSaveCV() {
             languages: cv.languages as unknown as Json,
             summary: cv.summary,
             is_ai_generated: cv.is_ai_generated,
+            file_url: filePath,
           })
           .eq('id', cv.id)
           .select()
@@ -108,6 +111,7 @@ export function useSaveCV() {
             languages: cv.languages as unknown as Json,
             summary: cv.summary,
             is_ai_generated: cv.is_ai_generated,
+            file_url: filePath,
           })
           .select()
           .single();
@@ -123,14 +127,22 @@ export function useSaveCV() {
 
 export function useDeleteCV() {
   const queryClient = useQueryClient();
-
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('cv_records').delete().eq('id', id);
-      if (error) throw error;
+      if (!user) throw new Error('Sign in to delete your CV.');
+      const { data: cv, error: readError } = await supabase.from('cv_records').select('id,user_id,file_url').eq('id', id).eq('user_id', user.id).single();
+      if (readError) throw readError;
+      if (!cv || cv.user_id !== user.id) throw new Error('This CV does not belong to your account.');
+      if (cv.file_url) {
+        const path = privateCVPath(cv.file_url, user.id);
+        // Remove the file first. On database failure the record remains available for a safe retry.
+        const { error: storageError } = await supabase.storage.from('cv_files').remove([path]);
+        if (storageError) throw new Error('Could not remove the private file. Your CV record was kept; please retry.');
+      }
+      const { error } = await supabase.from('cv_records').delete().eq('id', id).eq('user_id', user.id).select('id').single();
+      if (error) throw new Error(cv.file_url ? 'The file was removed, but its CV record could not be deleted. Retry to finish deletion.' : error.message);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cv_records'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cv_records'] }),
   });
 }

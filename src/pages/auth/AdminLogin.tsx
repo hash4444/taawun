@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 export default function AdminLogin() {
   const navigate = useNavigate();
   const { language, setLanguage, isRTL } = useApp();
-  const { signIn, isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { signIn, isAuthenticated, isAdmin, isLoading, authError, signOut } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -91,6 +91,8 @@ export default function AdminLogin() {
             </p>
           </div>
 
+          {authError && <p role="alert" className="text-destructive text-sm">{authError}</p>}
+          {isAuthenticated && !isAdmin && <div role="alert" className="border rounded-lg p-3 space-y-3"><p>{isRTL ? 'هذا الحساب لا يملك صلاحيات الإدارة.' : 'This account does not have administrator access.'}</p><Button variant="outline" onClick={() => void signOut().catch(error => toast.error(error.message))}>{isRTL ? 'تسجيل الخروج' : 'Sign out'}</Button></div>}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>

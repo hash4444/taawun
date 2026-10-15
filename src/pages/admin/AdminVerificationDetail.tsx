@@ -1,298 +1,90 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useApp } from '@/hooks/useApp';
 import { useAuth } from '@/hooks/useAuth';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { useUserDocuments, useApproveDocument, useRejectDocument } from '@/hooks/useKYC';
+import { Label } from '@/components/ui/label';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useUserDocuments, useApproveDocument, useRejectDocument, useUpdateVerificationStatus } from '@/hooks/useKYC';
 import { supabase } from '@/integrations/supabase/client';
+import { reviewedVerification } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Check, X, FileText, User, Building2, ExternalLink } from 'lucide-react';
 
-const DOC_TYPE_LABELS: Record<string, { en: string; ar: string }> = {
-  id_front: { en: 'ID Front', ar: 'الهوية (أمام)' },
-  id_back: { en: 'ID Back', ar: 'الهوية (خلف)' },
-  selfie: { en: 'Selfie', ar: 'صورة شخصية' },
-  commercial_reg: { en: 'Commercial Registration', ar: 'السجل التجاري' },
-  license: { en: 'License', ar: 'الرخصة' },
-  rep_id: { en: 'Representative ID', ar: 'هوية المفوض' },
+const labels: Record<string, { en: string; ar: string }> = {
+  id_front: { en: 'ID front', ar: 'الهوية (أمام)' }, id_back: { en: 'ID back', ar: 'الهوية (خلف)' },
+  selfie: { en: 'Selfie', ar: 'صورة شخصية' }, commercial_reg: { en: 'Commercial registration', ar: 'السجل التجاري' },
+  license: { en: 'Business licence', ar: 'الرخصة التجارية' }, rep_id: { en: 'Representative ID', ar: 'هوية المفوض' },
 };
 
 export default function AdminVerificationDetail() {
   const { userId } = useParams<{ userId: string }>();
-  const navigate = useNavigate();
   const { isRTL } = useApp();
   const { user } = useAuth();
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<{ id: string; type: string } | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-
-  const { data: documents, isLoading: docsLoading } = useUserDocuments(userId);
-  const approveMutation = useApproveDocument();
-  const rejectMutation = useRejectDocument();
-
-  // Fetch user profile info
-  const { data: profileData, isLoading: profileLoading } = useQuery({
-    queryKey: ['profile', userId],
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
+  const documents = useUserDocuments(userId);
+  const approve = useApproveDocument();
+  const reject = useRejectDocument();
+  const review = useUpdateVerificationStatus();
+  const target = useQuery({
+    queryKey: ['verification-target', userId], enabled: !!userId,
     queryFn: async () => {
-      if (!userId) return null;
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      // Check if worker or business
-      const { data: worker } = await supabase
-        .from('workers')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      const { data: business } = await supabase
-        .from('businesses')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      return {
-        profile,
-        worker,
-        business,
-        type: worker ? 'worker' : business ? 'business' : null,
-      };
+      const [profile, worker, business] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', userId!).maybeSingle(),
+        supabase.from('workers').select('*').eq('id', userId!).maybeSingle(),
+        supabase.from('businesses').select('*').eq('id', userId!).maybeSingle(),
+      ]);
+      for (const result of [profile, worker, business]) if (result.error) throw result.error;
+      return { profile: profile.data, worker: worker.data, business: business.data };
     },
-    enabled: !!userId,
   });
-
-  const handleApprove = async (documentId: string, docType: string) => {
-    if (!user || !userId || !profileData?.type) return;
+  const role = target.data?.profile?.role === 'business' ? 'business' : 'worker';
+  const record = role === 'business' ? target.data?.business : target.data?.worker;
+  const required = role === 'business' ? ['commercial_reg', 'license', 'rep_id'] : ['id_front', 'id_back', 'selfie'];
+  const allApproved = required.every(type => documents.data?.some(doc => doc.doc_type === type && doc.status === 'approved' && !!doc.reviewed_by && !!doc.reviewed_at));
+  const busy = approve.isPending || reject.isPending || review.isPending;
+  const decideDocument = async (documentId: string, docType: string, status: 'approved' | 'rejected') => {
+    if (!userId || !user) return;
+    if (status === 'rejected' && !notes.trim()) { setError(isRTL ? 'أضف سبب الرفض في الملاحظات.' : 'Add a rejection reason in the review notes.'); return; }
+    setError('');
     try {
-      await approveMutation.mutateAsync({ 
-        documentId, 
-        userId,
-        docType,
-        userRole: profileData.type as 'worker' | 'business',
-        adminId: user.id 
-      });
-      toast.success(isRTL ? 'تمت الموافقة على المستند' : 'Document approved');
-    } catch (error) {
-      toast.error(isRTL ? 'فشل في الموافقة' : 'Failed to approve');
-    }
+      await (status === 'approved' ? approve : reject).mutateAsync({ documentId, userId, docType, userRole: role, adminId: user.id, rejectionReason: notes });
+      toast.success(isRTL ? 'تم حفظ مراجعة المستند' : 'Document review recorded');
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Document review failed.'); }
   };
-
-  const openRejectDialog = (documentId: string, docType: string) => {
-    setSelectedDoc({ id: documentId, type: docType });
-    setRejectionReason('');
-    setRejectDialogOpen(true);
-  };
-
-  const handleReject = async () => {
-    if (!user || !selectedDoc || !userId || !profileData) return;
-    
+  const decideAccount = async (status: 'verified' | 'rejected') => {
+    if (!userId || !user) return;
+    if (status === 'rejected' && !notes.trim()) { setError(isRTL ? 'أضف سبب الرفض في الملاحظات.' : 'Add a rejection reason in the review notes.'); return; }
+    setError('');
     try {
-      await rejectMutation.mutateAsync({
-        documentId: selectedDoc.id,
-        userId,
-        docType: selectedDoc.type,
-        userRole: profileData.type as 'worker' | 'business',
-        adminId: user.id,
-        rejectionReason: rejectionReason || undefined,
-      });
-      toast.success(isRTL ? 'تم رفض المستند وإرسال الإشعار' : 'Document rejected and notification sent');
-      setRejectDialogOpen(false);
-    } catch (error) {
-      toast.error(isRTL ? 'فشل في الرفض' : 'Failed to reject');
-    }
+      await review.mutateAsync({ userId, role, status, adminId: user.id, notes });
+      await target.refetch();
+      toast.success(isRTL ? 'تم حفظ قرار التحقق' : 'Account verification decision recorded');
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Account verification failed.'); }
   };
-
-  const getDocumentUrl = async (storagePath: string) => {
-    const [bucket, ...pathParts] = storagePath.split('/');
-    const filePath = pathParts.join('/');
-    
-    const { data } = await supabase.storage
-      .from(bucket)
-      .createSignedUrl(filePath, 3600); // 1 hour expiry
-    
-    if (data?.signedUrl) {
-      window.open(data.signedUrl, '_blank');
-    } else {
-      toast.error(isRTL ? 'فشل في فتح المستند' : 'Failed to open document');
-    }
+  const viewDocument = async (storagePath: string) => {
+    const [bucket, ...path] = storagePath.split('/');
+    const { data, error: urlError } = await supabase.storage.from(bucket).createSignedUrl(path.join('/'), 60);
+    if (urlError || !data?.signedUrl) { setError(isRTL ? 'تعذر فتح المستند' : 'Could not open document'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   };
-
-  const isLoading = docsLoading || profileLoading;
-
-  return (
-    <div className="min-h-screen bg-background">
-      <AdminHeader 
-        title={isRTL ? 'تفاصيل التحقق' : 'Verification Details'} 
-        showBack 
-        backPath="/admin/verifications" 
-      />
-      <div className="px-4 py-4 space-y-6">
-        {isLoading ? (
-          <div className="space-y-4">
-            <div className="h-24 bg-muted rounded-xl animate-pulse" />
-            <div className="h-32 bg-muted rounded-xl animate-pulse" />
-          </div>
-        ) : !profileData?.profile ? (
-          <p className="text-center text-muted-foreground py-12">
-            {isRTL ? 'المستخدم غير موجود' : 'User not found'}
-          </p>
-        ) : (
-          <>
-            {/* User Info Card */}
-            <div className="card-elevated p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-full bg-primary-light flex items-center justify-center">
-                  {profileData.type === 'worker' ? (
-                    <User size={24} className="text-primary" />
-                  ) : (
-                    <Building2 size={24} className="text-primary" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold text-card-title">
-                    {profileData.profile.full_name || profileData.profile.email}
-                  </p>
-                  <p className="text-body text-muted-foreground">{profileData.profile.email}</p>
-                  <p className="text-caption text-muted-foreground">
-                    {profileData.type === 'worker'
-                      ? (isRTL ? 'عامل' : 'Worker')
-                      : (isRTL ? 'منشأة' : 'Business')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Documents Section */}
-            <div>
-              <h2 className="font-semibold mb-3">
-                {isRTL ? 'المستندات المرفوعة' : 'Uploaded Documents'}
-              </h2>
-              
-              {!documents || documents.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  {isRTL ? 'لا توجد مستندات' : 'No documents uploaded'}
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <div key={doc.id} className="card-elevated p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <FileText size={20} className="text-muted-foreground" />
-                          <div>
-                            <p className="font-medium">
-                              {DOC_TYPE_LABELS[doc.doc_type]?.[isRTL ? 'ar' : 'en'] || doc.doc_type}
-                            </p>
-                            <p className="text-caption text-muted-foreground">
-                              {new Date(doc.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge 
-                          variant={
-                            doc.status === 'approved' ? 'default' : 
-                            doc.status === 'rejected' ? 'destructive' : 
-                            'secondary'
-                          }
-                        >
-                          {doc.status === 'approved' 
-                            ? (isRTL ? 'مقبول' : 'Approved')
-                            : doc.status === 'rejected'
-                            ? (isRTL ? 'مرفوض' : 'Rejected')
-                            : (isRTL ? 'قيد المراجعة' : 'Pending')}
-                        </Badge>
-                      </div>
-
-                      {doc.rejection_reason && (
-                        <div className="bg-destructive/10 text-destructive text-sm p-2 rounded mb-3">
-                          <span className="font-medium">{isRTL ? 'سبب الرفض:' : 'Rejection reason:'}</span>{' '}
-                          {doc.rejection_reason}
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 flex-wrap">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => getDocumentUrl(doc.storage_path)}
-                        >
-                          <ExternalLink size={14} className="me-1" />
-                          {isRTL ? 'عرض' : 'View'}
-                        </Button>
-                        
-                        {doc.status === 'submitted' && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprove(doc.id, doc.doc_type)}
-                              disabled={approveMutation.isPending}
-                            >
-                              <Check size={14} className="me-1" />
-                              {isRTL ? 'قبول' : 'Approve'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => openRejectDialog(doc.id, doc.doc_type)}
-                              disabled={rejectMutation.isPending}
-                            >
-                              <X size={14} className="me-1" />
-                              {isRTL ? 'رفض' : 'Reject'}
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Rejection Dialog */}
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {isRTL ? 'رفض المستند' : 'Reject Document'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <label className="text-sm font-medium mb-2 block">
-              {isRTL ? 'سبب الرفض (اختياري)' : 'Rejection Reason (optional)'}
-            </label>
-            <Textarea
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder={isRTL ? 'مثال: الصورة غير واضحة' : 'e.g., Image is blurry'}
-              rows={3}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
-              {isRTL ? 'إلغاء' : 'Cancel'}
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleReject}
-              disabled={rejectMutation.isPending}
-            >
-              {isRTL ? 'تأكيد الرفض' : 'Confirm Reject'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+  return <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}><AdminHeader title={isRTL ? 'مراجعة التحقق' : 'Verification review'} showBack backPath="/admin/verifications" />
+    <main className="max-w-4xl mx-auto p-4 space-y-5">
+      {(error || documents.error || target.error) && <div role="alert" className="border border-destructive rounded-lg p-3 text-destructive">{error || (isRTL ? 'تعذر تحميل بيانات التحقق. أعد المحاولة.' : 'Could not load verification information. Please retry.')}<Button variant="outline" onClick={() => { void target.refetch(); void documents.refetch(); }}>{isRTL ? 'إعادة المحاولة' : 'Retry'}</Button></div>}
+      {documents.isLoading || target.isLoading ? <p role="status">{isRTL ? 'جارٍ التحميل…' : 'Loading…'}</p> : !target.data?.profile ? <p>{isRTL ? 'الحساب غير موجود' : 'Account not found'}</p> : <>
+        <section className="border rounded-xl p-5 space-y-3"><h1 className="text-xl font-semibold">{target.data.profile.full_name || target.data.profile.email}</h1><p>{target.data.profile.email}</p><StatusBadge status={reviewedVerification(record)} />
+          {record?.verification_status === 'verified' && (!record.verification_reviewed_at || !record.verification_reviewed_by) && <p className="text-sm text-muted-foreground">{isRTL ? 'تحتاج الموافقة القديمة إلى إعادة مراجعة موثقة قبل تفعيل الصلاحيات.' : 'This legacy approval needs a recorded administrator review before verified access is enabled.'}</p>}
+        </section>
+        <section className="border rounded-xl p-5 space-y-4"><h2 className="font-semibold">{isRTL ? 'قرار الحساب النهائي' : 'Final account decision'}</h2><p className="text-sm text-muted-foreground">{isRTL ? 'راجع المستندات المطلوبة أولاً، ثم اتخذ قراراً منفصلاً بشأن الحساب. تصل إشعارات المراجعة داخل التطبيق.' : 'Review each required document, then make a separate account decision. Review notifications are recorded in the app.'}</p><Label htmlFor="review-notes">{isRTL ? 'ملاحظات المراجعة وسبب الرفض' : 'Review notes / rejection reason'}</Label><Textarea id="review-notes" value={notes} onChange={event => setNotes(event.target.value)} rows={3} maxLength={2000} />
+          <div className="flex flex-wrap gap-3"><Button disabled={busy || !allApproved} onClick={() => void decideAccount('verified')}>{isRTL ? 'اعتماد التحقق من الحساب' : 'Approve account verification'}</Button><Button variant="destructive" disabled={busy} onClick={() => void decideAccount('rejected')}>{isRTL ? 'رفض التحقق' : 'Reject verification'}</Button></div>{!allApproved && <p className="text-xs text-muted-foreground">{isRTL ? 'يجب اعتماد جميع المستندات المطلوبة مع تسجيل المراجع أولاً.' : 'All required documents need recorded approval before the account can be verified.'}</p>}
+        </section>
+        <section className="space-y-3"><h2 className="font-semibold">{isRTL ? 'المستندات المطلوبة' : 'Required documents'}</h2>{required.map(type => <p key={type} className="text-sm">{isRTL ? labels[type].ar : labels[type].en}: {documents.data?.some(doc => doc.doc_type === type) ? (isRTL ? 'مرفوع' : 'Uploaded') : (isRTL ? 'مفقود' : 'Missing')}</p>)}
+          {documents.data?.map(doc => <article key={doc.id} className="border rounded-xl p-4 space-y-3"><div className="flex justify-between gap-4"><h3 className="font-medium">{isRTL ? labels[doc.doc_type]?.ar : labels[doc.doc_type]?.en}</h3><span className="text-sm">{doc.status}</span></div>{doc.rejection_reason && <p className="text-sm text-destructive">{doc.rejection_reason}</p>}<div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => void viewDocument(doc.storage_path)}>{isRTL ? 'عرض المستند' : 'View document'}</Button><Button size="sm" disabled={busy} onClick={() => void decideDocument(doc.id, doc.doc_type, 'approved')}>{isRTL ? 'اعتماد المستند' : 'Approve document'}</Button><Button size="sm" variant="destructive" disabled={busy} onClick={() => void decideDocument(doc.id, doc.doc_type, 'rejected')}>{isRTL ? 'رفض المستند' : 'Reject document'}</Button></div></article>)}
+        </section>
+      </>}
+    </main>
+  </div>;
 }
