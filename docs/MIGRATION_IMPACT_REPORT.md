@@ -2,6 +2,8 @@
 
 Prepared 2026-10-15 from local revision `96af52b1ada75fa1ff97dc404071f1fc52bcfcb7`. This report is a review artifact, not permission to activate a project, apply SQL, deploy functions, reset a database or read application records.
 
+**Later read-only evidence:** the owner restored the provisional candidate. `RESTORED_PROJECT_INVENTORY.md`, `HOSTED_SCHEMA_REVIEW.md` and `HOSTED_OPERATIONS_REVIEW.md` now record its active state, empty current inventory and exact hosted drift. The inactive/unknown-hosted findings below describe the initial preparation snapshot; they must not override those later reports. No migration or deployment has been authorized or executed.
+
 ## Scope and target identity
 
 - The owner provisionally selected `xhogffnpjaoxkgoiwcty` for staging only. Both this project and the original `fvnemfbqpmweqzhzuflu` may contain important data. The original reference is completely out of scope for further inspection or changes.

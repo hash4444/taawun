@@ -26,6 +26,7 @@ Updated 2026-10-15. Status: **local implementation; launch blocked on staging an
 ## Business, privacy and operations
 
 - [x] Owner selected `xhogffnpjaoxkgoiwcty` as a provisional staging candidate only.
+- [x] Owner-restored candidate verified ACTIVE_HEALTHY; exact read-only counts show zero Auth users, all 24 public application tables empty and zero Storage object metadata rows. Hosted drift/operations reviewed.
 - [ ] Verify candidate data/recovery safety and prior usage; obtain separate resume/migration/deployment authorization and confirm hosting target. Original project stays untouched.
 - [ ] Professional confirmation of UAE operating licence/model, permit responsibility and employer terms.
 - [ ] Approved student/employer privacy notice, lawful processing, consent/retention and cross-border handling.
