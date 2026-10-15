@@ -1,10 +1,10 @@
 # Deployment and rollback guide
 
-This is a preparation guide, not a deployment record. The user chose **continue locally**. No cloud project was reactivated, migrated or deployed.
+This is a preparation guide, not a deployment record. The owner has now selected `xhogffnpjaoxkgoiwcty` as **provisional staging only**, subject to the data-safety investigation in `SUPABASE_PROJECT_RECONCILIATION.md`. No cloud project was reactivated, migrated or deployed. Resume, migration, reset, deletion, deployment and paid-service activation require separate explicit approval.
 
 ## Environment gate
 
-The original checkout referenced `fvnemfbqpmweqzhzuflu`. Read-only account discovery showed an inactive Taawun project `xhogffnpjaoxkgoiwcty`; their identity/contents were not assumed equivalent. The local CLI project ID is now `taawun-local`. Cloud target selection and activation require separate user authorization. Keep local `.env.local` blank until real local public credentials exist; ignored environment files must never enter Git.
+The original checkout referenced `fvnemfbqpmweqzhzuflu`; leave it completely untouched. Read-only account discovery showed the inactive provisional Taawun candidate `xhogffnpjaoxkgoiwcty`; neither project has been classified as test-only or empty. The local CLI project ID is `taawun-local`. Candidate selection does not authorize activation or writes. Keep local `.env.local` blank until real local public credentials exist; ignored environment files must never enter Git. Confirm recoverability and actual schema/data before approving any migration, and prefer an isolated synthetic-data environment if important records exist.
 
 Use Node24 LTS, pinned npm lockfile and pinned Deno. `npm ci` reproduces dependencies. Only URL/public Supabase key and public provider/legacy UI flags belong in VITE variables. Backend service-role, provider and cron credentials belong only in a secret manager. `.env.example` and `supabase/.env.example` contain no real credentials.
 

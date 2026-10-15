@@ -51,5 +51,10 @@ Google/Microsoft sign-in and direct calendar connections need provider credentia
 - [Executed test results](docs/TEST_REPORT.md)
 - [Deployment/rollback](docs/DEPLOYMENT_GUIDE.md)
 - [Launch checklist](docs/LAUNCH_CHECKLIST.md)
+- [Staging readiness](docs/STAGING_READINESS_REPORT.md)
+- [Supabase target reconciliation](docs/SUPABASE_PROJECT_RECONCILIATION.md)
+- [Migration impact](docs/MIGRATION_IMPACT_REPORT.md)
+- [Real integration plan](docs/STAGING_INTEGRATION_PLAN.md)
+- [Prepared draft PR and permission diagnosis](docs/PULL_REQUEST.md)
 
 No production database or deployment has been changed. Controlled launch requires a complete Supabase staging rehearsal and business/legal/privacy/operational approvals.

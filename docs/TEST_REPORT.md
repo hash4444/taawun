@@ -4,21 +4,23 @@ Executed 2026-10-15 on Windows with Node 24.19.0, npm and pinned Deno 2.9.6. Bra
 
 ## Executed checks
 
-The final combined `npm run check` exited successfully after the calendar coverage and privacy repairs. All commands below actually ran. The ignored local log is `work/final-check.log`; it contains no production data.
+The combined `npm run check` exited successfully after the calendar coverage/privacy repairs and again after the offline staging harness was added. All commands below actually ran. Ignored local logs are `work/final-check.log` and `work/staging-preparation-check.log`; they contain no production data.
 
 | Check | Result | Boundary |
 | --- | --- | --- |
 | Frontend/Node TypeScript | Passed | Both application and tooling configurations |
 | Edge TypeScript | Passed | All three entry points and calendar provider adapter, frozen Deno lock |
 | ESLint | Passed | Repository source/configuration |
-| Vitest | **130 tests passed in 20 files** | React, pure rules and embedded PostgreSQL tests |
+| Vitest | **147 tests passed in 21 files** | Previous 130 plus 17 offline staging fixture/guard/preflight tests |
 | Deno handlers | **7 tests passed** | Mock HTTP, environment permission only; no network permission |
 | Production build | Passed | Vite 8.3.4, lazy route chunks |
 | Playwright | **24 tests passed** | 12 scenarios on desktop Chromium and Pixel 7 Chromium |
 | npm audit | **0 known vulnerabilities** | Installed lockfile graph, including development dependencies; time-specific advisory result |
 | Git whitespace check | Passed | Final source diff |
 
-GitHub clean-clone CI has been configured but is not established by these local results. Its status must be checked on the eventual PR commit.
+Independent clean-clone GitHub CI subsequently **passed** at commit `96af52b1ada75fa1ff97dc404071f1fc52bcfcb7`: [run 38731841976](https://github.com/hash4444/taawun/actions/runs/38731841976), Ubuntu 24.04, checkout, npm ci, browser installation, all checks and npm audit. Logs confirm the same 130 Vitest, 7 Deno and 24 browser results. This establishes that commit's clean-clone CI, not live Supabase integration or the status of every later commit. See `STAGING_READINESS_REPORT.md` for current infrastructure gates.
+
+The added staging preparation tests check offline-by-default operation, rejection before any request without recorded safety/scope decisions, original-project protection, exact HTTPS/project/key guards, redacted failure reports, fixture enum compatibility, parsed ICS privacy and refusing to overwrite run evidence. They use injected fake HTTP; no live preflight was executed. `node --check` passed for both scripts, and offline `prepare.mjs` plus `preflight.mjs --plan` ran successfully.
 
 ## Coverage and evidence
 
@@ -54,7 +56,7 @@ Key files affected by milestone (full changed-file lists are available in the de
 - D: `src/pages/worker/JobHunterDashboard.tsx`, `src/pages/business/CandidateHunterDashboard.tsx`, `src/hooks/useJobHunter.ts`, `useCandidateHunter.ts`, `supabase/functions/_shared/matching.ts`, `runtime.ts`, `security.ts`, the three function entry points and `supabase/functions/tests/edge_test.ts`.
 - E: `package.json`, `package-lock.json`, `deno.lock`, `.github/workflows/quality.yml`, `.env.example`, `supabase/.env.example`, `vite.config.ts`, `playwright.config.ts`, `public/_headers`, `public/_redirects`, `README.md` and all seven required documents under `docs/`.
 
-The development branch is pushed. Automatic PR creation returned GitHub HTTP 403 because the connected integration lacks permission. A draft PR and clean-clone CI result remain pending; no successful PR creation is claimed.
+The development branch is pushed. Automatic PR creation returned GitHub HTTP 403 at the integration credential boundary; exact installation grants remain unverified. A draft PR remains pending, while the first actual clean-clone CI passed as recorded above. No successful PR creation or hosted integration is claimed.
 
 ## Not executed and launch blockers
 

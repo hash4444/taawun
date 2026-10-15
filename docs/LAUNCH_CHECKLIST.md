@@ -13,6 +13,7 @@ Updated 2026-10-15. Status: **local implementation; launch blocked on staging an
 - [x] Approval-first assistant; default-disabled paid calls, cron and automatic/external submissions.
 - [x] Default-off isolation of financial/attendance/fixture-heavy legacy modules.
 - [ ] Full clean-clone CI run on the final PR commit, including browser/Edge/migration tests.
+- [x] Independent clean-clone push CI passed at `96af52b1ada75fa1ff97dc404071f1fc52bcfcb7` ([run](https://github.com/hash4444/taawun/actions/runs/38731841976)); this does not close the final PR or hosted integration gates.
 - [ ] Real Supabase local/staging Auth/PostgREST/Storage integration rehearsal and advisors.
 - [ ] Confirm each RLS/column/execute grant and negative access scenario on the deployed schema.
 - [ ] Audit historical privileged roles and legacy verification evidence with a trusted operator.
@@ -24,7 +25,8 @@ Updated 2026-10-15. Status: **local implementation; launch blocked on staging an
 
 ## Business, privacy and operations
 
-- [ ] Confirm exact cloud project and hosting target; obtain migration/deployment authorization.
+- [x] Owner selected `xhogffnpjaoxkgoiwcty` as a provisional staging candidate only.
+- [ ] Verify candidate data/recovery safety and prior usage; obtain separate resume/migration/deployment authorization and confirm hosting target. Original project stays untouched.
 - [ ] Professional confirmation of UAE operating licence/model, permit responsibility and employer terms.
 - [ ] Approved student/employer privacy notice, lawful processing, consent/retention and cross-border handling.
 - [ ] Verification staff, abuse reporting, incident response, support and data-request ownership.
