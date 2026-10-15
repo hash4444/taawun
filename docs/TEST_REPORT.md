@@ -46,6 +46,16 @@ The initial audit recorded passing lint/build but failing TypeScript, one placeh
 | D: assistant | Explainable matching, truthful templates, approval default, consent/pause/limits/logging, protected endpoints | Rule/RPC/handler/browser tests pass; automatic/external submissions and paid calls remain disabled |
 | E: launch preparation | Updated dependency graph, CI, environment templates, host examples, product/architecture/security/deployment/rollback/launch documentation | Local checks pass; controlled launch remains blocked by the gates below |
 
+Key files affected by milestone (full changed-file lists are available in the development commits):
+
+- A: `docs/TECHNICAL_AUDIT.md`, `src/contexts/AuthContext.tsx`, `src/lib/auth.ts`, `src/hooks/useKYC.ts`, `src/pages/admin/AdminVerificationDetail.tsx`, `supabase/migrations/20261015110639_student_marketplace_security.sql`, `supabase/functions/_shared/security.ts` and `runtime.ts`, with auth/KYC/database/handler regression tests.
+- B: `src/App.tsx`, `src/components/layout/BottomNav.tsx`, `src/components/marketplace/MarketplaceLayout.tsx`, `src/pages/worker/WorkerPersonalInfo.tsx`, `WorkerHome.tsx`, `WorkerJobs.tsx`, `WorkerApplications.tsx`, `src/pages/business/PostJob.tsx`, `BusinessJobDetail.tsx`, `src/hooks/useApplications.ts`, `useMarketplaceJobs.ts`, `useNotifications.ts` and `e2e/marketplace.spec.ts`.
+- C: `src/pages/worker/SmartAvailability.tsx`, `src/hooks/useAvailability.ts`, `src/lib/calendar.ts`, `supabase/functions/_shared/availability.ts`, `calendar-providers.ts`, the additive migration, and `src/test/availability.test.ts`, `calendar.test.ts`, `calendar-providers.test.ts`.
+- D: `src/pages/worker/JobHunterDashboard.tsx`, `src/pages/business/CandidateHunterDashboard.tsx`, `src/hooks/useJobHunter.ts`, `useCandidateHunter.ts`, `supabase/functions/_shared/matching.ts`, `runtime.ts`, `security.ts`, the three function entry points and `supabase/functions/tests/edge_test.ts`.
+- E: `package.json`, `package-lock.json`, `deno.lock`, `.github/workflows/quality.yml`, `.env.example`, `supabase/.env.example`, `vite.config.ts`, `playwright.config.ts`, `public/_headers`, `public/_redirects`, `README.md` and all seven required documents under `docs/`.
+
+The development branch is pushed. Automatic PR creation returned GitHub HTTP 403 because the connected integration lacks permission. A draft PR and clean-clone CI result remain pending; no successful PR creation is claimed.
+
 ## Not executed and launch blockers
 
 1. No Docker/Supabase local service stack was available. Auth/PostgREST/Storage/Realtime behavior, hosted extension/service grants and exact migration replay must be verified on an unlinked local stack and the explicitly confirmed staging target. PGlite cannot substitute for those services.
