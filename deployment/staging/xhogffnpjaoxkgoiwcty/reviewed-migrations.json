@@ -1,0 +1,54 @@
+{
+  "projectRef": "xhogffnpjaoxkgoiwcty",
+  "scope": "review-only; explicit owner approval required before cloud commands",
+  "migrations": [
+    {
+      "file": "20260713113724_20260409085945_9a063031-db23-4f68-b150-7225b62c118f.sql",
+      "sha256": "9446b934dfc20c7015784189a498658ff211a35094a405a42c911fc847ebdd8d",
+      "bytes": 19038,
+      "alreadyRecorded": true
+    },
+    {
+      "file": "20260713113756_20260503150601_4b372c33-04b6-45e0-9d3e-f571cab86922.sql",
+      "sha256": "f6a11273e49d9f5740903001e3d18e50cb5d77fc91c00364e832ad7e47873465",
+      "bytes": 5457,
+      "alreadyRecorded": true
+    },
+    {
+      "file": "20260713113803_20260626114800_fix_handle_new_user_role_casing.sql",
+      "sha256": "a731f8c87ef1a379dda15f23e854bc489a0f3decf191748f67788ce306f1dae5",
+      "bytes": 1002,
+      "alreadyRecorded": true
+    },
+    {
+      "file": "20260713113811_20260627000000_candidate_hunter_backend.sql",
+      "sha256": "aff92b2b86d3d523b167a8c4ebd508d21305ebf4fb35a48055cd102c81e6b543",
+      "bytes": 5209,
+      "alreadyRecorded": true
+    },
+    {
+      "file": "20260713114015_private_cv_storage.sql",
+      "sha256": "97cb5d3930518009e0687ea65bf91296d7da14a8d032590ee2056209305cac42",
+      "bytes": 743,
+      "alreadyRecorded": true
+    },
+    {
+      "file": "20260713114151_restrict_security_definer_functions.sql",
+      "sha256": "a331bcc1c413368ab9ab3fd488d678dc1f578532c243274b755752843fd55076",
+      "bytes": 801,
+      "alreadyRecorded": true
+    },
+    {
+      "file": "20261015130045_staging_cv_file_url_compatibility.sql",
+      "sha256": "c42f6381d615ea97ca290d8aa67db63617e60fecf07b6acafc34d2ad5922e5bc",
+      "bytes": 251,
+      "alreadyRecorded": false
+    },
+    {
+      "file": "20261015130133_student_marketplace_security_adoption.sql",
+      "sha256": "f11fa56517dfc63ae05f8dd3842a86af0e3ad3ad018973a52b4c14fc4652ab75",
+      "bytes": 54594,
+      "alreadyRecorded": false
+    }
+  ]
+}
