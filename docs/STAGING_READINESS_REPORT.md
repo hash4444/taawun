@@ -9,9 +9,10 @@ As of 2026-10-15 (Asia/Dubai). **NO-GO for migrations, test-data writes and depl
 | Candidate state/data safety | INACTIVE; existing data, former production use and recoverability **unknown** |
 | Original project | `fvnemfbqpmweqzhzuflu`, leave untouched; initial metadata access was denied |
 | Repository | Development branch pushed; `main` remains `7bcc61a8db4174867ea99feeecefc0d3bb2080dd` |
-| Independent clean-clone CI | **Passed** at `96af52b1ada75fa1ff97dc404071f1fc52bcfcb7`, [run 38731841976](https://github.com/hash4444/taawun/actions/runs/38731841976) |
-| CI details | Ubuntu 24.04, checkout + npm ci, browser install, TypeScript/ESLint/build, 130 Vitest, 7 Deno, 24 Playwright, npm audit all succeeded |
+| Independent clean-clone CI | **Passed** at `bbb6c5b09a5b1d8d809ea42e63be2463c6d68b39`, [run 38733865686](https://github.com/hash4444/taawun/actions/runs/38733865686) |
+| CI details | Ubuntu 24.04, checkout + npm ci, browser install, TypeScript/ESLint/build, 147 Vitest, 7 Deno, 24 Playwright, npm audit all succeeded |
 | Local staging-preparation validation | Full checks passed again: **147 Vitest tests in 21 files**, 7 Deno, 24 browser checks; the additional 17 tests exercise only offline fixture/safety/preflight behavior |
+| CLI connection / backup read | Normal owner-approved login succeeded. Authenticated inventory returned no listed backups or physical recovery boundaries; PITR disabled, WAL-G flag enabled. A retained paused-project archive and recoverability remain unconfirmed |
 | Actual PR | **Not created**; connected integration still returns 403; body and compare link prepared in `PULL_REQUEST.md` |
 | Live integration tests | **Not run**; inactive/unknown-data target and unapproved mutations are explicit blockers |
 | Failed inspection | Read-only candidate table listing timed out; this is not a failing application test or evidence of zero rows |
@@ -37,14 +38,14 @@ The push trigger is limited to `codex/student-marketplace` and runs tests only w
 
 - No additional application regression is established by this preparation task. Passing fixture/PGlite tests cannot close hosted authorization risks or prove historical role grants are safe.
 - The migration is structurally additive but changes existing RLS/grants, role data, defaults and Storage behavior. It must not be applied blindly to an unknown data-bearing project. Review `MIGRATION_IMPACT_REPORT.md` against the hosted catalog and take verified recovery copies first.
-- Existing production/test classification and backup availability are unknown. Inactivity is not proof that a project is empty or disposable.
+- Existing production/test classification and recoverability are unknown. The authenticated backup-list response returned no entries; it does not independently rule out a retained paused-project archive. Inactivity is not proof that a project is empty or disposable.
 - Stored source confirms the two deployed version-1 hunters do check cron secrets, but their per-user paths use legacy service-role/paid-provider behavior without the new role, consent, quota or timetable safeguards. Job Hunter can automatically write applications under legacy settings; Candidate Hunter can mark outreach without delivery evidence. Current credentials/schedules/runtime usage remain unknown. Review and separately authorize containment before any resume; SQL-only changes would not replace these handlers. No handler was invoked.
 - PR creation is blocked at the integration credential boundary. Repository admin/push metadata and workflow permissions do not prove connector PR-write permission.
 - Direct calendar OAuth lifecycle, retention/deletion operations, additional browsers/assistive technology and load/real-device performance remain known gaps from `TEST_REPORT.md`.
 
 ## Required owner actions and next gate
 
-1. Check the candidate's dashboard recovery metadata without resuming/restoring, or authorize normal Supabase CLI sign-in for the supported read-only backup inventory command. The attempted CLI inventory stopped with `AccessTokenRequiredError`; no login was initiated. Establish pause date, available backup/download/Storage recovery path and independent exports. Share metadata only, never tokens or personal records in chat.
+1. CLI sign-in and the read-only backup inventory are complete. Check the candidate's Dashboard Project Overview/backup recovery notices without selecting Resume, Restore or Download. Establish pause date, retained archive dates/status, offered database/Storage recovery path and independent exports. If no archive metadata is shown, obtain Supabase confirmation of retained pause archives before approving activation. Share metadata only, never tokens or personal records in chat.
 2. Authorize a narrow recovery/inspection path after that check: prefer an isolated inspection of an existing backup where available; otherwise separately approve inspection-only resume after reviewing recovery eligibility, integrations and cost implications. No migration/deployment approval is implied.
 3. Establish actual data inventory, prior usage and recoverability. If important data exists or classification stays uncertain, keep this candidate intact and obtain separate approval for an isolated synthetic-data staging environment.
 4. Resolve GitHub PR permission or create the prepared draft in GitHub's authenticated UI. Do not merge.
