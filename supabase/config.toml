@@ -1,4 +1,11 @@
-project_id = "fvnemfbqpmweqzhzuflu"
+project_id = "taawun-local"
+
+[auth]
+site_url = "http://127.0.0.1:8080"
+additional_redirect_urls = ["http://127.0.0.1:8080/auth/callback", "http://localhost:8080/auth/callback", "http://127.0.0.1:8080/auth/reset-password", "http://localhost:8080/auth/reset-password"]
+
+[auth.email]
+enable_confirmations = true
 
 [functions.ai-job-hunter]
 verify_jwt = false

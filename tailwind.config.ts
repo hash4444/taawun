@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
-  darkMode: ["class"],
+  darkMode: 'class',
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
@@ -10,7 +10,7 @@ export default {
       center: true,
       padding: "1rem",
       screens: {
-        sm: "100%",
+        sm: "640px",
         md: "768px",
         lg: "768px",
         xl: "768px",

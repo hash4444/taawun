@@ -1,13 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@config '../tailwind.config.ts';
 
 @layer base {
   :root {
-    /* Brand: #0D967B = hsl(164, 83%, 32%) */
-    --primary: 164 83% 32%;
+    /* Darker brand green maintains readable text and button contrast. */
+    --primary: 164 83% 26%;
     --primary-foreground: 0 0% 100%;
     --primary-light: 164 40% 95%;
     --primary-dark: 164 83% 25%;
@@ -27,12 +24,12 @@
     --popover-foreground: 220 25% 15%;
     
     --muted: 210 15% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 16% 38%;
     
     --accent: 164 40% 95%;
     --accent-foreground: 164 83% 25%;
     
-    --success: 152 69% 40%;
+    --success: 152 69% 30%;
     --success-foreground: 0 0% 100%;
     --success-light: 152 60% 95%;
     
@@ -44,7 +41,7 @@
     --destructive-foreground: 0 0% 100%;
     --destructive-light: 0 70% 96%;
     
-    --info: 205 84% 52%;
+    --info: 205 84% 35%;
     --info-foreground: 0 0% 100%;
     --info-light: 205 80% 95%;
     
@@ -72,9 +69,9 @@
   }
 
   .dark {
-    /* Brand: #0D967B desaturated for dark mode */
-    --primary: 164 50% 30%;
-    --primary-foreground: 0 0% 96%;
+    /* Brighter dark-theme accents use a dark button foreground for contrast. */
+    --primary: 164 50% 48%;
+    --primary-foreground: 180 3% 7%;
     --primary-light: 164 10% 12%;
     --primary-dark: 164 40% 38%;
     
@@ -93,25 +90,25 @@
     --popover-foreground: 180 2% 88%;
     
     --muted: 180 3% 14%;
-    --muted-foreground: 180 2% 50%;
+    --muted-foreground: 180 2% 66%;
     
     --accent: 164 8% 12%;
     --accent-foreground: 164 30% 48%;
     
-    --success: 152 24% 36%;
-    --success-foreground: 0 0% 96%;
+    --success: 152 45% 55%;
+    --success-foreground: 180 3% 7%;
     --success-light: 152 6% 12%;
     
     --warning: 38 30% 40%;
     --warning-foreground: 38 25% 90%;
     --warning-light: 38 8% 12%;
     
-    --destructive: 0 30% 40%;
-    --destructive-foreground: 0 0% 96%;
+    --destructive: 0 65% 65%;
+    --destructive-foreground: 180 3% 7%;
     --destructive-light: 0 8% 12%;
     
-    --info: 205 25% 40%;
-    --info-foreground: 0 0% 96%;
+    --info: 205 60% 62%;
+    --info-foreground: 180 3% 7%;
     --info-light: 205 8% 12%;
     
     --border: 180 3% 16%;
